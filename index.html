@@ -1,66 +1,167 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>TDM 350x350 - Landscape TPP</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<meta name="screen-orientation" content="landscape">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/nipplejs/0.9.0/nipplejs.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>TDM 350x350</title>
+<script async src="https://unpkg.com/es-module-shims@1.8.0/dist/es-module-shims.js"></script>
+<script type="importmap">
+{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/","nipplejs":"https://cdn.jsdelivr.net/npm/nipplejs@0.9.0/dist/nipplejs.min.js"}}
+</script>
 <style>
-html,body{margin:0; padding:0; width:100%; height:100%; overflow:hidden; background:#000; position:fixed}
-canvas{display:block; width:100%!important; height:100%!important}
-#joystick{position:fixed; bottom:5vh; left:3vw; width:22vh; height:22vh; z-index:10}
-#info{position:fixed; top:2vh; left:2vw; color:white; font-family:monospace; font-size:1.8vh; background:rgba(0,0,0,0.6); padding:1vh 1vw; border-radius:1vh}
-#buttons{position:fixed; bottom:5vh; right:3vw; display:flex; gap:2vw; z-index:10}
-.btn{width:12vh; height:12vh; background:rgba(255,255,255,0.15); border:0.3vh solid white; border-radius:50%; color:white; font-size:1.5vh; backdrop-filter:blur(5px)}
-.btn:active{background:rgba(255,255,255,0.4)}
-#rotateMsg{position:fixed; inset:0; background:#000; color:white; display:none; justify-content:center; align-items:center; font-size:5vw; z-index:100; font-family:monospace}
-@media (orientation:portrait){#rotateMsg{display:flex} canvas{display:none!important}}
+*{margin:0; padding:0; box-sizing:border-box; touch-action:none; -webkit-touch-callout:none; -webkit-user-select:none; user-select:none}
+html,body{width:100%; height:100%; overflow:hidden; background:#000; position:fixed; overscroll-behavior:none}
+#game{position:fixed; left:0; top:0; width:100vw; height:100vh; width:100dvw; height:100dvh; display:block}
+#joystick-zone{position:fixed; left:0; bottom:0; width:35vw; height:60vh; z-index:5}
+#camera-zone{position:fixed; right:0; bottom:0; width:65vw; height:60vh; z-index:5}
+#ui{position:fixed; top:0; left:0; width:100%; padding: env(safe-area-inset-top) 2vw 0 2vw; display:flex; justify-content:space-between; pointer-events:none; z-index:10}
+#info{color:#fff; font:700 3vw monospace; text-shadow:0 0 4px #000; background:rgba(0,0,0,0.4); padding:1vw 2vw; border-radius:1vw}
+#controls{position:fixed; bottom:0; right:0; width:100%; padding:0 2vw env(safe-area-inset-bottom) 0; display:flex; justify-content:flex-end; gap:2vw; pointer-events:none; z-index:10; padding-bottom:3vh}
+.btn{pointer-events:auto; width:18vw; max-width:80px; height:18vw; max-height:80px; border-radius:50%; background:rgba(255,255,255,0.18); border:2px solid rgba(255,255,255,0.7); color:#fff; font:700 2.5vw sans-serif; backdrop-filter:blur(4px)}
+.btn:active{background:rgba(255,255,255,0.5)}
+#fs-btn{position:fixed; top:50%; left:50%; transform:translate(-50%,-50%); padding:4vw 8vw; font-size:5vw; background:#1e90ff; color:#fff; border:none; border-radius:3vw; z-index:20}
 </style>
 </head>
 <body>
-<div id="rotateMsg">📱 Phone ko Landscape karo 🔄</div>
-<div id="info">350x350 FT | BGMI SPEED | TPP | 70% DMG OUTSIDE</div>
-<div id="joystick"></div>
-<div id="buttons">
+<canvas id="game"></canvas>
+<div id="joystick-zone"></div>
+<div id="camera-zone"></div>
+<div id="ui"><div id="info">350x350 FT | BGMI TPP</div></div>
+<div id="controls">
 <button class="btn" id="crouch">CROUCH</button>
 <button class="btn" id="prone">PRONE</button>
 <button class="btn" id="sprint">SPRINT</button>
-<button class="btn" id="fs">⛶ FS</button>
 </div>
+<button id="fs-btn">TAP TO START - FULL NOTCH SCREEN</button>
 
-<script>
-const MAP_SIZE=350, CHAR_HEIGHT=6;
-const SPEEDS={sprint:20.6, run:15.4, crouchSprint:15.7, crouchWalk:4.2, prone:3.9, walk:5.5};
-let currentSpeed=SPEEDS.run, health=100;
+<script type="module">
+import * as THREE from 'three';
+import nipplejs from 'nipplejs';
 
-// Auto Fullscreen on first touch
-function goFS(){
-  if(!document.fullscreenElement){
-    document.documentElement.requestFullscreen().catch(()=>{});
-    if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('landscape').catch(()=>{}); }
-  }
-}
-document.body.addEventListener('touchstart', goFS, {once:true});
-document.body.addEventListener('click', goFS, {once:true});
-document.getElementById('fs').onclick=goFS;
+const MAP_SIZE = 350;
+const SPEEDS = { sprint:20.6, run:15.4, crouchSprint:15.7, crouchWalk:4.2, prone:3.9 }; // ft/sec BGMI exact
+let curSpeed = SPEEDS.run;
+let isSprint=false, isCrouch=false, isProne=false;
+let health=100;
 
-// Scene
-const scene=new THREE.Scene(); scene.background=new THREE.Color(0x4a7c2e);
-const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
-const renderer=new THREE.WebGLRenderer({antialias:true, powerPreference:"high-performance"});
-renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio,2));
-document.body.appendChild(renderer.domElement);
+const canvas = document.getElementById('game');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x5a8f3a);
+scene.fog = new THREE.Fog(0x5a8f3a, 80, 250);
 
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE,MAP_SIZE), new THREE.MeshStandardMaterial({color:0x3d6b22}));
+const camera = new THREE.PerspectiveCamera(70, innerWidth/innerHeight, 0.1, 1000);
+const renderer = new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+
+const light = new THREE.HemisphereLight(0xffffff, 0x334422, 1.2);
+scene.add(light);
+const dir = new THREE.DirectionalLight(0xffffff, 0.8);
+dir.position.set(50,100,50); scene.add(dir);
+
+const ground = new THREE.Mesh(new THREE.PlaneGeometry(MAP_SIZE,MAP_SIZE), new THREE.MeshStandardMaterial({color:0x3d6b22}));
 ground.rotation.x=-Math.PI/2; scene.add(ground);
-scene.add(new THREE.GridHelper(MAP_SIZE,35,0x000000,0x2a4a18));
-scene.add(new THREE.AmbientLight(0xffffff,0.85));
-const sun=new THREE.DirectionalLight(0xffffff,0.6); sun.position.set(100,200,100); scene.add(sun);
+const grid = new THREE.GridHelper(MAP_SIZE, 35, 0x000000, 0x2a4a18);
+grid.position.y=0.05; scene.add(grid);
 
-// Character 6ft TPP
-const charGroup=new THREE.Group();
-const body=new THREE.Mesh(new THREE.CapsuleGeometry(1.2,CHAR_HEIGHT-2.4,4,8), new THREE.MeshStandardMaterial({color:0x1e90ff}));
-body.position.y=CHAR_HEIGHT/2; charGroup.add(body); charGroup.position.set(0,0,0); scene.add(charGroup);
+// Character 6ft
+const charGroup = new THREE.Group();
+const charMesh = new THREE.Mesh(new THREE.CapsuleGeometry(1, 2.5, 4, 8), new THREE.MeshStandardMaterial({color:0x00aaff}));
+charMesh.position.y=3; charGroup.add(charMesh);
+charGroup.position.set(0,0,20); scene.add(charGroup);
 
-// Map Objects - Your exact dims
+// Dummy map objects from your saved dims
+for(let i=0;i<8;i++){
+  const box = new THREE.Mesh(new THREE.BoxGeometry(15,10,12), new THREE.MeshStandardMaterial({color:0x8b5a2b}));
+  box.position.set((Math.random()-0.5)*200,5,(Math.random()-0.5)*200); scene.add(box);
+}
+for(let i=0;i<12;i++){
+  const rock = new THREE.Mesh(new THREE.DodecahedronGeometry(4+Math.random()*4), new THREE.MeshStandardMaterial({color:0x555555}));
+  rock.position.set((Math.random()-0.5)*180,3,(Math.random()-0.5)*180); scene.add(rock);
+}
+
+// Camera TPP vars
+let camYaw = 0, camPitch = -15;
+let targetYaw = 0;
+
+async function startFS(){
+  try{
+    await document.documentElement.requestFullscreen();
+    if(screen.orientation && screen.orientation.lock){ await screen.orientation.lock('landscape').catch(()=>{}); }
+  }catch(e){}
+  document.getElementById('fs-btn').style.display='none';
+  canvas.style.width='100dvw'; canvas.style.height='100dvh';
+  renderer.setSize(innerWidth, innerHeight);
+  camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix();
+}
+document.getElementById('fs-btn').onclick=startFS;
+document.body.addEventListener('touchstart', ()=>{ if(!document.fullscreenElement) startFS(); }, {once:true});
+
+// LEFT Joystick - Move
+const joy = nipplejs.create({zone:document.getElementById('joystick-zone'), mode:'static', position:{left:'18%', top:'60%'}, color:'white', size:110, multitouch:true});
+let moveX=0, moveZ=0;
+joy.on('move', (e,d)=>{ if(!d) return; const r=d.angle.radian; const f=Math.min(d.force,1.5); moveX=Math.cos(r)*f; moveZ=-Math.sin(r)*f; });
+joy.on('end', ()=>{ moveX=0; moveZ=0; });
+
+// RIGHT Side - Camera Rotation (Multi-touch)
+let lastTouchX=0, lastTouchY=0;
+document.getElementById('camera-zone').addEventListener('touchstart', e=>{ lastTouchX=e.touches[0].clientX; lastTouchY=e.touches[0].clientY; });
+document.getElementById('camera-zone').addEventListener('touchmove', e=>{
+  const dx = e.touches[0].clientX - lastTouchX;
+  const dy = e.touches[0].clientY - lastTouchY;
+  targetYaw -= dx * 0.3; // BGMI sensitivity
+  camPitch += dy * 0.2;
+  camPitch = Math.max(-60, Math.min(20, camPitch));
+  lastTouchX=e.touches[0].clientX; lastTouchY=e.touches[0].clientY;
+}, {passive:false});
+
+// Buttons - Multi-touch supported
+const crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone'), sprintBtn=document.getElementById('sprint');
+crouchBtn.addEventListener('touchstart', e=>{ e.preventDefault(); isCrouch=!isCrouch; isProne=false; curSpeed=isCrouch?(isSprint?SPEEDS.crouchSprint:SPEEDS.crouchWalk):SPEEDS.run; charMesh.scale.y=isCrouch?0.6:1; });
+proneBtn.addEventListener('touchstart', e=>{ e.preventDefault(); isProne=!isProne; isCrouch=false; curSpeed=isProne?SPEEDS.prone:SPEEDS.run; charMesh.scale.y=isProne?0.35:1; });
+sprintBtn.addEventListener('touchstart', e=>{ e.preventDefault(); isSprint=true; curSpeed=isCrouch?SPEEDS.crouchSprint:isProne?SPEEDS.prone:SPEEDS.sprint; });
+sprintBtn.addEventListener('touchend', e=>{ e.preventDefault(); isSprint=false; curSpeed=isCrouch?SPEEDS.crouchWalk:isProne?SPEEDS.prone:SPEEDS.run; });
+
+function loop(){
+  requestAnimationFrame(loop);
+  // Smooth yaw
+  camYaw += (targetYaw - camYaw)*0.15;
+  
+  // Movement relative to camera yaw
+  if(moveX!==0 || moveZ!==0){
+    const rad = THREE.MathUtils.degToRad(camYaw);
+    const mx = moveX*Math.cos(rad) - moveZ*Math.sin(rad);
+    const mz = moveX*Math.sin(rad) + moveZ*Math.cos(rad);
+    charGroup.position.x += mx * curSpeed * 0.016;
+    charGroup.position.z += mz * curSpeed * 0.016;
+    charGroup.rotation.y = Math.atan2(mx, mz);
+  }
+  
+  // Boundary check 70% dmg/sec
+  const lim = MAP_SIZE/2 - 2;
+  if(Math.abs(charGroup.position.x)>lim || Math.abs(charGroup.position.z)>lim){
+    health -= 70*0.016;
+    document.getElementById('info').textContent = `OUTSIDE! HP ${health.toFixed(0)}% -70%/s`;
+    if(health<=0){ charGroup.position.set(0,0,20); health=100; }
+  } else {
+    document.getElementById('info').textContent = `350FT MAP | ${curSpeed.toFixed(1)}ft/s | HP ${health.toFixed(0)}% | TPP`;
+  }
+  
+  // TPP Camera follow
+  const dist=14, height=6 + (isCrouch?-2:isProne?-3:0);
+  const cy = THREE.MathUtils.degToRad(camYaw);
+  const cp = THREE.MathUtils.degToRad(camPitch);
+  camera.position.x = charGroup.position.x + Math.sin(cy)*Math.cos(cp)*dist;
+  camera.position.z = charGroup.position.z + Math.cos(cy)*Math.cos(cp)*dist;
+  camera.position.y = charGroup.position.y + height + Math.sin(cp)*dist*0.5 + 3;
+  camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
+  
+  renderer.render(scene, camera);
+}
+loop();
+window.addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); });
+</script>
+</body>
+</html>

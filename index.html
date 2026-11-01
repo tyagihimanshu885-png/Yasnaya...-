@@ -2,31 +2,35 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <title>TDM 350 BGMI FIX</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none}
-html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
-#game{position:fixed;left:0;top:0;width:100vw;width:100dvw;height:100vh;height:100dvh;display:block}
-#joy{position:fixed;left:5vw;bottom:10vh;width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
+*{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;position:fixed;overscroll-behavior:none;background:#000}
+#game{position:fixed;left:0;top:0;right:0;bottom:0;width:100vw;width:100dvw;height:100vh;height:100dvh;height:100svh;display:block;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px)}
+#joy{position:fixed;left:5vw;left:calc(5vw + env(safe-area-inset-left,0px));bottom:10vh;bottom:calc(10vh + env(safe-area-inset-bottom,0px));width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
 #knob{position:absolute;left:50%;top:50%;width:44%;height:44%;background:#fff;border-radius:50%;transform:translate(-50%,-50%)}
 #cam{position:fixed;right:0;top:0;width:65vw;height:100vh;height:100dvh;z-index:5}
-#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.7);color:#0f0;padding:6px;font:700 11px monospace;z-index:20}
-#btns{position:fixed;right:4vw;bottom:10vh;display:flex;gap:3vw;z-index:10}
+#top{position:fixed;top:0;top:env(safe-area-inset-top,0px);left:0;right:0;background:rgba(0,0,0,0.7);color:#0f0;padding:6px;font:700 11px monospace;z-index:20}
+#btns{position:fixed;right:4vw;right:calc(4vw + env(safe-area-inset-right,0px));bottom:10vh;bottom:calc(10vh + env(safe-area-inset-bottom,0px));display:flex;gap:3vw;z-index:10}
 .b{width:19vw;max-width:72px;height:19vw;max-height:72px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.6);color:#fff;font:700 10px sans-serif}
 .b.active{background:#00aaff}
+#rotateHint{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);background:rgba(0,0,0,0.85);color:#fff;padding:14px 22px;border-radius:12px;font:700 14px sans-serif;z-index:100;display:none}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
 <div id="cam"></div>
-<div id="top">BGMI FIXED | Joystick + Camera</div>
+<div id="top">BGMI FIXED | Full Notch + Auto Landscape</div>
 <div id="btns">
 <button class="b active" id="stand">STANDING</button>
 <button class="b" id="crouch">CROUCH</button>
 <button class="b" id="prone">PRONE</button>
 </div>
+<div id="rotateHint">📱 Phone ko ghumao - Auto Landscape</div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 const MAP=350, SPEEDS={stand:15.4,sprint:20.6,crouch:4.2,crouchSprint:15.7,prone:3.9};
@@ -36,19 +40,18 @@ const scene=new THREE.Scene(); scene.background=new THREE.Color(0x3d6b22);
 const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
 const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 scene.add(new THREE.AmbientLight(0xffffff,0.85));
 const sun=new THREE.DirectionalLight(0xffffff,0.6); sun.position.set(60,120,60); scene.add(sun);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshLambertMaterial({color:0x4a8a2e}));
 ground.rotation.x=-Math.PI/2; scene.add(ground);
 const grid=new THREE.GridHelper(MAP,30,0x1a3310,0x2d5a1f); grid.position.y=0.1; scene.add(grid);
-// CHARACTER
 const charGroup=new THREE.Group();
 const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,3,0.9), new THREE.MeshLambertMaterial({color:0x0088ff})); body.position.y=2.6; charGroup.add(body);
 const head=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.9,0.9), new THREE.MeshLambertMaterial({color:0xffdbac})); head.position.y=4.7; charGroup.add(head);
 const legs=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.8,0.9), new THREE.MeshLambertMaterial({color:0x0033aa})); legs.position.y=0.9; charGroup.add(legs);
 charGroup.position.set(0,0,140); scene.add(charGroup);
 function box(x,z,w,h,d,c){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color:c})); m.position.set(x,h/2,z); scene.add(m); return m; }
-// FULL MAP SAME AS BEFORE
 box(0,155,15,10,12,0x8b5a2b); box(80,140,18,12,14,0x7a4a2b); box(-90,0,15,10,12,0x8b5a2b); box(95,-5,18,12,14,0x7a4a2b); box(-80,155,15,10,12,0x8b5a2b); box(0,-150,15,10,12,0x8b5a2b); box(70,-145,18,12,14,0x7a4a2b); box(120,-30,15,10,12,0x8b5a2b);
 for(let i=0;i<8;i++) box((Math.random()-0.5)*200,(Math.random()-0.5)*200,1.5,5,20,0x6b6b6b);
 box(25,55,12,8,10,0x4a3a2e); box(-30,-25,12,8,10,0x4a3a2e); box(40,-25,12,8,10,0x4a3a2e); box(-35,5,12,8,10,0x4a3a2e);
@@ -62,11 +65,11 @@ for(let i=0;i<10;i++) box((Math.random()-0.5)*220,(Math.random()-0.5)*220,8,0.5,
 [[-110,110],[-110,95],[-110,-95],[-100,-110],[110,110],[110,95],[110,-110],[100,-95]].forEach(p=> box(p[0],p[1],15,5,6,0x2a2a2a));
 for(let i=0;i<18;i++){ const tr=box((Math.random()-0.5)*300,(Math.random()-0.5)*300,1.5,8,1.5,0x3d2b1f); const lv=new THREE.Mesh(new THREE.SphereGeometry(6,6,6), new THREE.MeshLambertMaterial({color:0x1a5a1a})); lv.position.set(tr.position.x,12,tr.position.z); scene.add(lv); }
 
-// === BGMI JOYSTICK FIX ===
+// JOYSTICK SAME
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyActive=false, cx=0, cy=0;
 function getCenter(){const rc=joy.getBoundingClientRect(); return {x:rc.left+rc.width/2,y:rc.top+rc.height/2};}
-joy.addEventListener('touchstart', e=>{ e.preventDefault(); joyActive=true; const c=getCenter(); cx=c.x; cy=c.y; handle(e.touches[0]); },{passive:false});
+joy.addEventListener('touchstart', e=>{ e.preventDefault(); joyActive=true; const c=getCenter(); cx=c.x; cy=c.y; handle(e.touches[0]); tryAutoFS(); },{passive:false});
 joy.addEventListener('touchmove', e=>{ e.preventDefault(); if(joyActive) handle(e.touches[0]); },{passive:false});
 joy.addEventListener('touchend', e=>{ e.preventDefault(); joyActive=false; moveX=0; moveZ=0; isSprint=false; knob.style.transform='translate(-50%,-50%)'; },{passive:false});
 function handle(t){
@@ -74,43 +77,59 @@ function handle(t){
   let dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  // Yaha fix: Up = +Z forward, Left = -X
   moveX = dx/max;
-  moveZ = -dy/max; // upar = forward
+  moveZ = -dy/max;
   let force=dist/max;
   if(force>0.82){ isSprint=true; curSpeed=state==='crouch'?SPEEDS.crouchSprint:state==='prone'?SPEEDS.prone:SPEEDS.sprint; }
   else { isSprint=false; curSpeed=state==='crouch'?SPEEDS.crouch:state==='prone'?SPEEDS.prone:SPEEDS.stand; }
 }
 
-// === BGMI CAMERA FIX - Up/Down ab tez hoga ===
+// CAMERA FIX - REVERSE HATAYA
 const camArea=document.getElementById('cam'); let lx=0,ly=0;
-camArea.addEventListener('touchstart', e=>{ lx=e.touches[0].clientX; ly=e.touches[0].clientY; },{passive:false});
+camArea.addEventListener('touchstart', e=>{ lx=e.touches[0].clientX; ly=e.touches[0].clientY; tryAutoFS(); },{passive:false});
 camArea.addEventListener('touchmove', e=>{
   e.preventDefault();
   const dx=e.touches[0].clientX-lx;
   const dy=e.touches[0].clientY-ly;
-  targetYaw -= dx*0.5; // BGMI sensitivity
-  camPitch -= dy*0.8; // Up/Down ab 0.8 se tez - pehle 0.28 tha isliye nahi ho raha tha
+  targetYaw -= dx*0.5;
+  camPitch += dy*0.8; // YEH FIX HAI - pehle -= tha isliye reverse tha, ab += se BGMI jaisa sidha
   camPitch=Math.max(-45,Math.min(70,camPitch));
   lx=e.touches[0].clientX; ly=e.touches[0].clientY;
 },{passive:false});
 
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone'); if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.7; legs.scale.y=1; } if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; } if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; } curSpeed=s==='crouch'?SPEEDS.crouch:s==='prone'?SPEEDS.prone:SPEEDS.stand; }
-standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
-crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
-proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone');},{passive:false});
+standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand'); tryAutoFS(); },{passive:false});
+crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch'); tryAutoFS(); },{passive:false});
+proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone'); tryAutoFS(); },{passive:false});
+
+// AUTO FULLSCREEN + LANDSCAPE + FULL NOTCH
+let fsDone=false;
+function tryAutoFS(){
+  if(fsDone) return;
+  fsDone=true;
+  const el=document.documentElement;
+  if(el.requestFullscreen){ el.requestFullscreen().catch(()=>{}); }
+  if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('landscape').catch(()=>{}); }
+  // Hide address bar
+  window.scrollTo(0,1);
+  setTimeout(()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); },300);
+}
+document.body.addEventListener('touchstart', tryAutoFS, {once:true});
+document.body.addEventListener('click', tryAutoFS, {once:true});
+// Check portrait
+function checkOrient(){
+  const hint=document.getElementById('rotateHint');
+  if(innerHeight>innerWidth){ hint.style.display='block'; } else { hint.style.display='none'; tryAutoFS(); }
+}
+window.addEventListener('orientationchange', ()=>{ setTimeout(checkOrient,300); });
+checkOrient();
 
 function animate(){
   requestAnimationFrame(animate);
   camYaw+=(targetYaw-camYaw)*0.15;
   if(moveX!==0||moveZ!==0){
     const rad=THREE.MathUtils.degToRad(camYaw);
-    const sinY=Math.sin(rad), cosY=Math.cos(rad);
-    // BGMI REAL FORMULA - Forward = away from camera
-    const mx = moveX*cosY - moveZ*sinY; 
-    const mz = -moveX*sinY - moveZ*cosY;
-    // Actually forward should be -cos, -sin, so:
     const finalX = -moveZ*Math.sin(rad) + moveX*Math.cos(rad);
     const finalZ = -moveZ*Math.cos(rad) - moveX*Math.sin(rad);
     charGroup.position.x+=finalX*curSpeed*0.06;
@@ -124,7 +143,7 @@ function animate(){
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.6 + 2;
   camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
-  document.getElementById('top').textContent=`350 FT | ${curSpeed.toFixed(1)} ft/s | ${state.toUpperCase()}${isSprint?' +SPRINT':''} | Yaw ${camYaw|0} Pitch ${camPitch|0}`;
+  document.getElementById('top').textContent=`350 FT | ${curSpeed.toFixed(1)} ft/s | ${state.toUpperCase()}${isSprint?' +SPRINT':''}`;
   renderer.render(scene,camera);
 }
 animate();

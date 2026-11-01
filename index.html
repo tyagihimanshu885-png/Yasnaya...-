@@ -2,153 +2,166 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>TDM Map</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>TDM 350</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box}
-html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed;touch-action:none}
-#canvas{position:fixed;left:0;top:0;width:100vw;height:100vh;background:#3d6b22}
-#joystick{position:fixed;left:5vw;bottom:10vh;width:30vw;height:30vw;max-width:130px;max-height:130px;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.6);border-radius:50%;z-index:10}
-#stick{position:absolute;left:50%;top:50%;width:50%;height:50%;background:rgba(255,255,255,0.8);border-radius:50%;transform:translate(-50%,-50%)}
-#camArea{position:fixed;right:0;top:0;width:60vw;height:100vh;z-index:5}
-#top{position:fixed;top:0;left:0;padding:8px 12px;color:#fff;font:700 12px monospace;background:rgba(0,0,0,0.5);z-index:10}
-#btns{position:fixed;right:3vw;bottom:8vh;display:flex;gap:3vw;z-index:10}
-.b{width:16vw;max-width:70px;height:16vw;max-height:70px;border-radius:50%;background:rgba(0,0,0,0.4);border:2px solid #fff;color:#fff;font:700 9px sans-serif}
-#start{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);padding:15px 30px;background:#00aaff;color:#fff;border:none;border-radius:10px;font-size:18px;z-index:100}
+*{margin:0;padding:0;touch-action:none;user-select:none}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
+#game{position:fixed;left:0;top:0;width:100vw;height:100vh}
+#joy{position:fixed;left:4vw;bottom:8vh;width:28vw;max-width:120px;height:28vw;max-height:120px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
+#knob{position:absolute;left:50%;top:50%;width:45%;height:45%;background:#fff;border-radius:50%;transform:translate(-50%,-50%)}
+#cam{position:fixed;right:0;top:0;width:60vw;height:100vh;z-index:5}
+#top{position:fixed;top:0;left:0;background:rgba(0,0,0,0.6);color:#fff;padding:6px 10px;font:700 11px monospace;z-index:10}
+#btns{position:fixed;right:4vw;bottom:8vh;display:flex;gap:3vw;z-index:10}
+.b{width:18vw;max-width:68px;height:18vw;max-height:68px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.5);color:#fff;font:700 10px sans-serif}
+.b.active{background:rgba(0,170,255,0.8)}
 </style>
 </head>
 <body>
-<canvas id="canvas"></canvas>
-<div id="joystick"><div id="stick"></div></div>
-<div id="camArea"></div>
-<div id="top">350x350 FT | BGMI TPP | LOADING...</div>
+<canvas id="game"></canvas>
+<div id="joy"><div id="knob"></div></div>
+<div id="cam"></div>
+<div id="top" id="info">350x350 FT | BGMI TPP</div>
 <div id="btns">
+<button class="b" id="stand">STANDING</button>
 <button class="b" id="crouch">CROUCH</button>
 <button class="b" id="prone">PRONE</button>
-<button class="b" id="sprint">SPRINT</button>
 </div>
-<button id="start">TAP TO START GAME</button>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.128.0/three.min.js"></script>
 <script>
-// FORCE START
-document.getElementById('start').onclick = function(){
-  this.style.display='none';
-  if(document.documentElement.requestFullscreen){document.documentElement.requestFullscreen().catch(()=>{});}
-  initGame();
-};
+const MAP=350;
+const SPEEDS={stand:15.4, sprint:20.6, crouch:4.2, crouchSprint:15.7, prone:3.9};
+let curSpeed=SPEEDS.stand;
+let state='stand'; // stand, crouch, prone
+let moveX=0, moveZ=0, camYaw=0, camPitch=20, targetYaw=0;
 
-function initGame(){
-  const MAP=350;
-  const SPEEDS={sprint:20.6, run:15.4, crouchWalk:4.2, prone:3.9};
-  let curSpeed=SPEEDS.run;
-  let isCrouch=false, isProne=false, isSprint=false;
-  let moveX=0, moveY=0, camYaw=0, camPitch=15;
+const canvas=document.getElementById('game');
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x3d6b22);
+const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
+renderer.setSize(innerWidth, innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 
-  const canvas=document.getElementById('canvas');
-  const scene=new THREE.Scene();
-  scene.background=new THREE.Color(0x4a8f2e);
-  const camera=new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 1000);
-  const renderer=new THREE.WebGLRenderer({canvas:canvas, antialias:true});
-  renderer.setSize(innerWidth, innerHeight);
+scene.add(new THREE.AmbientLight(0xffffff,0.8));
+const sun=new THREE.DirectionalLight(0xffffff,0.6); sun.position.set(50,100,50); scene.add(sun);
 
-  scene.add(new THREE.AmbientLight(0xffffff,0.9));
-  const sun=new THREE.DirectionalLight(0xffffff,0.5); sun.position.set(50,100,50); scene.add(sun);
+// Ground - Visible green
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshLambertMaterial({color:0x3d6b22}));
+ground.rotation.x=-Math.PI/2; scene.add(ground);
+const grid=new THREE.GridHelper(MAP,25,0x1a3a0a,0x2a5a1a); scene.add(grid);
 
-  // Ground
-  const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshBasicMaterial({color:0x3d6b22}));
-  ground.rotation.x=-Math.PI/2; scene.add(ground);
-  const grid=new THREE.GridHelper(MAP,20,0x000000,0x224422); scene.add(grid);
+// Character - SIMPLE BOX so it WILL show
+const charGroup=new THREE.Group();
+const body=new THREE.Mesh(new THREE.BoxGeometry(2,6,1.2), new THREE.MeshLambertMaterial({color:0x0088ff}));
+body.position.y=3; charGroup.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(0.7,8,8), new THREE.MeshLambertMaterial({color:0xffdbac}));
+head.position.y=6.5; charGroup.add(head);
+charGroup.position.set(0,0,0); scene.add(charGroup);
 
-  // Character - 6ft blue
-  const charGroup=new THREE.Group();
-  const body=new THREE.Mesh(new THREE.CapsuleGeometry(1,3,4,8), new THREE.MeshBasicMaterial({color:0x00aaff}));
-  body.position.y=2; charGroup.add(body);
-  charGroup.position.set(0,0,0); scene.add(charGroup);
-
-  // Houses
-  for(let i=0;i<6;i++){
-    const h=new THREE.Mesh(new THREE.BoxGeometry(15,8,12), new THREE.MeshBasicMaterial({color:0x8b4513}));
-    const a=(Math.random()-0.5)*200; const b=(Math.random()-0.5)*200;
-    h.position.set(a,4,b); scene.add(h);
-  }
-  for(let i=0;i<8;i++){
-    const r=new THREE.Mesh(new THREE.BoxGeometry(5,4,5), new THREE.MeshBasicMaterial({color:0x666666}));
-    r.position.set((Math.random()-0.5)*200,2,(Math.random()-0.5)*200); scene.add(r);
-  }
-
-  // Joystick Logic - LEFT SIDE - Multi-touch
-  const joy=document.getElementById('joystick');
-  const stick=document.getElementById('stick');
-  let joyActive=false, joyCenterX=0, joyCenterY=0;
-
-  joy.addEventListener('touchstart', e=>{
-    e.preventDefault(); joyActive=true;
-    const rect=joy.getBoundingClientRect();
-    joyCenterX=rect.left+rect.width/2; joyCenterY=rect.top+rect.height/2;
-    handleJoy(e.touches[0]);
-  },{passive:false});
-  joy.addEventListener('touchmove', e=>{ e.preventDefault(); if(joyActive) handleJoy(e.touches[0]); },{passive:false});
-  joy.addEventListener('touchend', e=>{ e.preventDefault(); joyActive=false; moveX=0; moveY=0; stick.style.transform='translate(-50%,-50%)'; },{passive:false});
-
-  function handleJoy(t){
-    let dx=t.clientX-joyCenterX; let dy=t.clientY-joyCenterY;
-    let dist=Math.sqrt(dx*dx+dy*dy); let max=50;
-    if(dist>max){ dx=dx/dist*max; dy=dy/dist*max; dist=max; }
-    stick.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-    moveX=dx/max; moveY=dy/max;
-  }
-
-  // Right side camera drag
-  const camArea=document.getElementById('camArea');
-  let lastX=0,lastY=0;
-  camArea.addEventListener('touchstart', e=>{ lastX=e.touches[0].clientX; lastY=e.touches[0].clientY; },{passive:false});
-  camArea.addEventListener('touchmove', e=>{
-    e.preventDefault();
-    const dx=e.touches[0].clientX-lastX; const dy=e.touches[0].clientY-lastY;
-    camYaw-=dx*0.4; camPitch+=dy*0.3;
-    camPitch=Math.max(-30,Math.min(60,camPitch));
-    lastX=e.touches[0].clientX; lastY=e.touches[0].clientY;
-  },{passive:false});
-
-  // Buttons multi-touch
-  document.getElementById('sprint').addEventListener('touchstart', e=>{ e.preventDefault(); isSprint=true; curSpeed=SPEEDS.sprint; },{passive:false});
-  document.getElementById('sprint').addEventListener('touchend', e=>{ e.preventDefault(); isSprint=false; curSpeed=isCrouch?SPEEDS.crouchWalk:isProne?SPEEDS.prone:SPEEDS.run; },{passive:false});
-  document.getElementById('crouch').addEventListener('touchstart', e=>{ e.preventDefault(); isCrouch=!isCrouch; isProne=false; curSpeed=isCrouch?SPEEDS.crouchWalk:SPEEDS.run; body.scale.y=isCrouch?0.6:1; },{passive:false});
-  document.getElementById('prone').addEventListener('touchstart', e=>{ e.preventDefault(); isProne=!isProne; isCrouch=false; curSpeed=isProne?SPEEDS.prone:SPEEDS.run; body.scale.y=isProne?0.3:1; },{passive:false});
-
-  function animate(){
-    requestAnimationFrame(animate);
-    
-    if(moveX!=0 || moveY!=0){
-      const rad=THREE.MathUtils.degToRad(camYaw);
-      const mx = moveX*Math.cos(rad) - moveY*Math.sin(rad);
-      const mz = moveX*Math.sin(rad) + moveY*Math.cos(rad);
-      charGroup.position.x += mx*curSpeed*0.02;
-      charGroup.position.z += mz*curSpeed*0.02;
-      charGroup.rotation.y = Math.atan2(mx, mz);
-      
-      // Boundary 70% dmg
-      const lim=MAP/2-3;
-      if(Math.abs(charGroup.position.x)>lim) charGroup.position.x = Math.sign(charGroup.position.x)*lim;
-      if(Math.abs(charGroup.position.z)>lim) charGroup.position.z = Math.sign(charGroup.position.z)*lim;
-    }
-
-    // TPP Camera
-    const d=15, h=8 + (isCrouch?-2:isProne?-4:0);
-    const cy=THREE.MathUtils.degToRad(camYaw);
-    const cp=THREE.MathUtils.degToRad(camPitch);
-    camera.position.x = charGroup.position.x + Math.sin(cy)*d;
-    camera.position.z = charGroup.position.z + Math.cos(cy)*d;
-    camera.position.y = charGroup.position.y + h + Math.sin(cp)*5;
-    camera.lookAt(charGroup.position);
-
-    document.getElementById('top').textContent = `350x350 FT | Speed ${curSpeed} ft/s | ${isCrouch?'CROUCH':isProne?'PRONE':isSprint?'SPRINT':'RUN'} | TPP`;
-    renderer.render(scene,camera);
-  }
-  animate();
-  window.addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+// Some houses to see map
+for(let i=0;i<8;i++){
+  const h=new THREE.Mesh(new THREE.BoxGeometry(15+Math.random()*5,8,12), new THREE.MeshLambertMaterial({color:0x8b5a2b}));
+  h.position.set((Math.random()-0.5)*220,4,(Math.random()-0.5)*220); scene.add(h);
 }
+for(let i=0;i<10;i++){
+  const r=new THREE.Mesh(new THREE.BoxGeometry(4,3,4), new THREE.MeshLambertMaterial({color:0x555555}));
+  r.position.set((Math.random()-0.5)*200,1.5,(Math.random()-0.5)*200); scene.add(r);
+}
+
+// JOYSTICK - LEFT
+const joy=document.getElementById('joy'), knob=document.getElementById('knob');
+let joyActive=false, cx=0, cy=0, isSprinting=false;
+joy.addEventListener('touchstart', e=>{
+  e.preventDefault(); joyActive=true;
+  const rc=joy.getBoundingClientRect(); cx=rc.left+rc.width/2; cy=rc.top+rc.height/2;
+  handle(e.touches[0]);
+},{passive:false});
+joy.addEventListener('touchmove', e=>{ e.preventDefault(); if(joyActive) handle(e.touches[0]); },{passive:false});
+joy.addEventListener('touchend', e=>{
+  e.preventDefault(); joyActive=false; moveX=0; moveZ=0; isSprinting=false;
+  knob.style.transform='translate(-50%,-50%)';
+},{passive:false});
+
+function handle(t){
+  let dx=t.clientX-cx, dy=t.clientY-cy;
+  let dist=Math.sqrt(dx*dx+dy*dy), max=45;
+  let force=dist/max;
+  if(dist>max){ dx=dx/dist*max; dy=dy/dist*max; dist=max; force=1; }
+  knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
+  moveX=dx/max; moveZ=-dy/max;
+  // SPRINT LOGIC - Joystick ko bahar kheecho to sprint
+  if(force>0.85){
+    isSprinting=true;
+    curSpeed = state==='crouch'?SPEEDS.crouchSprint:state==='prone'?SPEEDS.prone:SPEEDS.sprint;
+  } else {
+    isSprinting=false;
+    curSpeed = state==='crouch'?SPEEDS.crouch:state==='prone'?SPEEDS.prone:SPEEDS.stand;
+  }
+}
+
+// CAMERA DRAG - RIGHT
+const camArea=document.getElementById('cam');
+let lx=0,ly=0;
+camArea.addEventListener('touchstart', e=>{ lx=e.touches[0].clientX; ly=e.touches[0].clientY; },{passive:false});
+camArea.addEventListener('touchmove', e=>{
+  e.preventDefault();
+  const dx=e.touches[0].clientX-lx, dy=e.touches[0].clientY-ly;
+  targetYaw-=dx*0.4; camPitch+=dy*0.25;
+  camPitch=Math.max(-30,Math.min(60,camPitch));
+  lx=e.touches[0].clientX; ly=e.touches[0].clientY;
+},{passive:false});
+
+// BUTTONS - STANDING / CROUCH / PRONE
+const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
+function setState(s){
+  state=s;
+  standBtn.classList.toggle('active', s==='stand');
+  crouchBtn.classList.toggle('active', s==='crouch');
+  proneBtn.classList.toggle('active', s==='prone');
+  if(s==='stand'){ body.scale.y=1; body.position.y=3; head.position.y=6.5; curSpeed=isSprinting?SPEEDS.sprint:SPEEDS.stand; }
+  if(s==='crouch'){ body.scale.y=0.6; body.position.y=1.8; head.position.y=4; curSpeed=isSprinting?SPEEDS.crouchSprint:SPEEDS.crouch; }
+  if(s==='prone'){ body.scale.y=0.25; body.position.y=0.8; head.position.y=1.5; curSpeed=SPEEDS.prone; }
+}
+standBtn.addEventListener('touchstart', e=>{ e.preventDefault(); setState('stand'); },{passive:false});
+crouchBtn.addEventListener('touchstart', e=>{ e.preventDefault(); setState('crouch'); },{passive:false});
+proneBtn.addEventListener('touchstart', e=>{ e.preventDefault(); setState('prone'); },{passive:false});
+setState('stand');
+
+// FULLSCREEN on first tap anywhere
+document.body.addEventListener('touchstart', function fs(){
+  if(document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(()=>{});
+  document.body.removeEventListener('touchstart', fs);
+}, {once:true});
+
+function loop(){
+  requestAnimationFrame(loop);
+  camYaw+=(targetYaw-camYaw)*0.12;
+  
+  if(moveX!==0 || moveZ!==0){
+    const rad=THREE.MathUtils.degToRad(camYaw);
+    const mx=moveX*Math.cos(rad)-moveZ*Math.sin(rad);
+    const mz=moveX*Math.sin(rad)+moveZ*Math.cos(rad);
+    charGroup.position.x+=mx*curSpeed*0.04;
+    charGroup.position.z+=mz*curSpeed*0.04;
+    charGroup.rotation.y=Math.atan2(mx,mz);
+    const lim=MAP/2-4;
+    charGroup.position.x=Math.max(-lim,Math.min(lim,charGroup.position.x));
+    charGroup.position.z=Math.max(-lim,Math.min(lim,charGroup.position.z));
+  }
+
+  const dist=14, h=7 + (state==='crouch'?-2:state==='prone'?-4:0);
+  camera.position.x=charGroup.position.x+Math.sin(THREE.MathUtils.degToRad(camYaw))*dist;
+  camera.position.z=charGroup.position.z+Math.cos(THREE.MathUtils.degToRad(camYaw))*dist;
+  camera.position.y=charGroup.position.y+h+Math.sin(THREE.MathUtils.degToRad(camPitch))*2;
+  camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
+
+  document.getElementById('top').textContent=`350FT MAP | ${curSpeed.toFixed(1)} ft/s | ${state.toUpperCase()} ${isSprinting?'+SPRINT':''} | TPP`;
+  renderer.render(scene,camera);
+}
+loop();
+window.addEventListener('resize', ()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
 </script>
 </body>
 </html>

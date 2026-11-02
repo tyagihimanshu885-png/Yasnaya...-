@@ -20,10 +20,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
 <script type="importmap">
 { "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/" } }
 </script>
-<!-- EMERGENCY HIDE - agar module crash bhi hua toh bhi loading hategi -->
-<script>
-setTimeout(function(){ var el=document.getElementById('loading'); if(el) el.style.display='none'; }, 1500);
-</script>
+<script>setTimeout(function(){var el=document.getElementById('loading');if(el)el.style.display='none';},1500);</script>
 </head>
 <body>
 <div id="loading">LOADING BGMI CHARACTER...</div>
@@ -39,16 +36,13 @@ setTimeout(function(){ var el=document.getElementById('loading'); if(el) el.styl
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-
 const MAP=350;
 const SPEEDS={ stand:6.5, crouch:2.8, prone:1.5 };
 let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=12;
-
 const canvas=document.getElementById('game');
 const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x87ceeb);
 scene.fog=new THREE.Fog(0x9ac07a, 90, 320);
-
 const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 800);
 const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setSize(innerWidth, innerHeight);
@@ -56,7 +50,6 @@ renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.sRGBEncoding;
-
 scene.add(new THREE.HemisphereLight(0xffffff, 0x3a5f2a, 0.85));
 scene.add(new THREE.AmbientLight(0xffffff,0.45));
 const sun=new THREE.DirectionalLight(0xfff6e0,0.9);
@@ -64,7 +57,6 @@ sun.position.set(120,160,90); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-200; sun.shadow.camera.right=200; sun.shadow.camera.top=200; sun.shadow.camera.bottom=-200;
 scene.add(sun);
-
 function makeGround(){
   const c=document.createElement('canvas'); c.width=c.height=1024;
   const ctx=c.getContext('2d');
@@ -80,13 +72,11 @@ function makeGround(){
 }
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({ map:makeGround(), roughness:0.95 }));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-
 const charGroup=new THREE.Group();
 scene.add(charGroup);
 charGroup.position.set(-140,0,140);
 let mixer=null, actions={}, soldierModel=null;
 const gltfLoader=new GLTFLoader();
-
 function onModelLoaded(gltf){
   const model=gltf.scene;
   model.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }});
@@ -108,7 +98,6 @@ function onFinalFail(){
   charGroup.add(g);
   soldierModel=g;
 }
-
 setTimeout(()=>{
   const el=document.getElementById('loading');
   if(el && el.style.display!=='none'){
@@ -116,13 +105,11 @@ setTimeout(()=>{
     if(!soldierModel) onFinalFail();
   }
 }, 2500);
-
 gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{
   gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{
     gltfLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onModelLoaded, undefined, onFinalFail);
   });
 });
-
 function box(x,z,w,h,d,c){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
   m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
@@ -131,7 +118,6 @@ function wall(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5; box(cx-w/2,cz,t,h,d,c); bo
 function wallGate(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5,gate=12; box(cx-w/2,cz,t,h,d,c); box(cx+w/2,cz,t,h,d,c); box(cx,cz-d/2,w,h,t,c); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,c); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,c); }
 wallGate(35,85,34,22); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
 [[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],16,5,7,0x4a2e1a));
-
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
@@ -150,7 +136,7 @@ document.addEventListener('touchmove', e=>{
 },{passive:false});
 document.addEventListener('touchend', e=>{
   for(let t of e.changedTouches){
-    if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; if(actions['idle']){ actions['walk']?.stop(); actions['idle'].play(); } }
+    if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
     if(t.identifier===camId) camId=null;
   }
 },{passive:false});
@@ -159,9 +145,8 @@ function handleJoy(t){
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   if(dist<5){ moveX=0; moveZ=0; return; }
-  let nx=dx/max, nz=-dy/max;
+  let nx=dx/max, nz=dy/max;
   moveX=nx; moveZ=nz;
-  if(actions['walk'] && !actions['walk'].isRunning()){ actions['idle']?.stop(); actions['walk'].play(); }
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){
@@ -173,7 +158,13 @@ function setState(s){
     soldierModel.scale.set(1.8,1.8,1.8);
   }
   if(s==='stand'){ curSpeed=SPEEDS.stand; }
-  if(s==='crouch'){ curSpeed=SPEEDS.crouch; if(soldierModel) soldierModel.position.y=-0.3; }
+  if(s==='crouch'){ 
+    curSpeed=SPEEDS.crouch; 
+    if(soldierModel){
+      soldierModel.scale.set(1.8,1.25,1.8);
+      soldierModel.position.y=-0.4;
+    }
+  }
   if(s==='prone'){ 
     curSpeed=SPEEDS.prone; 
     if(soldierModel){ 
@@ -186,7 +177,6 @@ function setState(s){
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
 crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
 proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone');},{passive:false});
-
 const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
@@ -209,7 +199,7 @@ function animate(){
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.5;
   camera.lookAt(charGroup.position.x, charGroup.position.y+1.2, charGroup.position.z);
-  document.getElementById('top').textContent=`${state.toUpperCase()} | Speed ${curSpeed} | BGMI CAM OK`;
+  document.getElementById('top').textContent=`${state.toUpperCase()} | Speed ${curSpeed}`;
   renderer.render(scene,camera);
 }
 animate();

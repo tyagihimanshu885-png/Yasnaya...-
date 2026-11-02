@@ -20,7 +20,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
 <script type="importmap">
 { "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/" } }
 </script>
-<script>setTimeout(function(){var el=document.getElementById('loading');if(el)el.style.display='none';},1500);</script>
+<script>setTimeout(function(){var e=document.getElementById('loading');if(e)e.style.display='none';},1200);</script>
 </head>
 <body>
 <div id="loading">LOADING BGMI CHARACTER...</div>
@@ -48,14 +48,11 @@ const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
-renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.sRGBEncoding;
 scene.add(new THREE.HemisphereLight(0xffffff, 0x3a5f2a, 0.85));
 scene.add(new THREE.AmbientLight(0xffffff,0.45));
 const sun=new THREE.DirectionalLight(0xfff6e0,0.9);
-sun.position.set(120,160,90); sun.castShadow=true;
-sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.left=-200; sun.shadow.camera.right=200; sun.shadow.camera.top=200; sun.shadow.camera.bottom=-200;
+sun.position.set(120,160,90); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
 scene.add(sun);
 function makeGround(){
   const c=document.createElement('canvas'); c.width=c.height=1024;
@@ -82,8 +79,6 @@ function onModelLoaded(gltf){
   model.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }});
   model.scale.set(1.8,1.8,1.8);
   soldierModel=model;
-  model.position.set(0,0,0);
-  model.rotation.set(0,0,0);
   charGroup.add(model);
   mixer=new THREE.AnimationMixer(model);
   gltf.animations.forEach(clip=>{ actions[clip.name.toLowerCase()]=mixer.clipAction(clip); });
@@ -98,26 +93,12 @@ function onFinalFail(){
   charGroup.add(g);
   soldierModel=g;
 }
-setTimeout(()=>{
-  const el=document.getElementById('loading');
-  if(el && el.style.display!=='none'){
-    el.style.display='none';
-    if(!soldierModel) onFinalFail();
-  }
-}, 2500);
-gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{
-  gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{
-    gltfLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onModelLoaded, undefined, onFinalFail);
-  });
-});
-function box(x,z,w,h,d,c){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
-  m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
-}
+setTimeout(()=>{ const el=document.getElementById('loading'); if(el && el.style.display!=='none'){ el.style.display='none'; if(!soldierModel) onFinalFail(); } }, 2500);
+gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{ gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{ gltfLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onModelLoaded, undefined, onFinalFail); }); });
+function box(x,z,w,h,d,c){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c})); m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m; }
 function wall(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5; box(cx-w/2,cz,t,h,d,c); box(cx+w/2,cz,t,h,d,c); box(cx,cz-d/2,w,h,t,c); box(cx,cz+d/2,w,h,t,c); }
 function wallGate(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5,gate=12; box(cx-w/2,cz,t,h,d,c); box(cx+w/2,cz,t,h,d,c); box(cx,cz-d/2,w,h,t,c); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,c); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,c); }
 wallGate(35,85,34,22); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
-[[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],16,5,7,0x4a2e1a));
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
@@ -145,13 +126,15 @@ function handleJoy(t){
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   if(dist<5){ moveX=0; moveZ=0; return; }
-  let nx=dx/max, nz=dy/max;
-  moveX=nx; moveZ=nz;
+  // --- YAHAN REVERSE FIX KIYA HAI ---
+  let nx=dx/max;
+  let nz=-dy/max; // pehle dy/max tha, ab -dy/max karke ulta kiya
+  moveX=nx; 
+  moveZ=nz;
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){
   state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
-  charGroup.scale.set(1,1,1);
   if(soldierModel){ 
     soldierModel.rotation.x=0; 
     soldierModel.position.set(0,0,0);
@@ -161,8 +144,9 @@ function setState(s){
   if(s==='crouch'){ 
     curSpeed=SPEEDS.crouch; 
     if(soldierModel){
-      soldierModel.scale.set(1.8,1.25,1.8);
-      soldierModel.position.y=-0.4;
+      // CROUCH FIX - ab chhota hoga, bada nahi
+      soldierModel.scale.set(1.8,0.95,1.8);
+      soldierModel.position.y=-0.6;
     }
   }
   if(s==='prone'){ 
@@ -187,6 +171,7 @@ function animate(){
     const rad=THREE.MathUtils.degToRad(camYaw);
     const finalX = moveZ*Math.sin(rad) + moveX*Math.cos(rad);
     const finalZ = moveZ*Math.cos(rad) - moveX*Math.sin(rad);
+    // --- YAHAN BHI REVERSE FIX ---
     charGroup.position.x+=finalX*curSpeed*0.09;
     charGroup.position.z+=finalZ*curSpeed*0.09;
     if(finalX!==0||finalZ!==0) charGroup.rotation.y=Math.atan2(finalX,finalZ);

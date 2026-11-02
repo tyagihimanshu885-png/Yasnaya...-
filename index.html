@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>TDM - BGMI REAL HD</title>
+<title>TDM 350 - REAL BGMI HD</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none}
 html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
@@ -11,17 +11,17 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
 #joy{position:fixed;left:5vw;bottom:10vh;width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
 #knob{position:absolute;left:50%;top:50%;width:44%;height:44%;background:#fff;border-radius:50%;transform:translate(-50%,-50%)}
 #cam{position:fixed;right:0;top:0;width:60vw;height:100vh;z-index:5}
-#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.5);color:#0f0;padding:6px 10px;font:700 12px monospace;z-index:20}
+#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#00ff88;padding:6px 10px;font:700 12px monospace;z-index:20}
 #btns{position:fixed;right:3vw;bottom:10vh;display:flex;gap:2.5vw;z-index:10}
 .b{width:18vw;max-width:70px;height:18vw;max-height:70px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.6);color:#fff;font:700 10px sans-serif}
-.b.active{background:#00aaff}
+.b.active{background:#00aaff;box-shadow:0 0 12px #00aaff}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
 <div id="cam"></div>
-<div id="top">LOADING HD TEXTURES...</div>
+<div id="top">REAL HD TEXTURES LOADING...</div>
 <div id="btns">
 <button class="b active" id="stand">STANDING</button>
 <button class="b" id="crouch">CROUCH</button>
@@ -38,90 +38,104 @@ const scene=new THREE.Scene();
 scene.background=new THREE.Color(0x8ecf6e);
 
 const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 800);
-const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:"high-performance"});
 renderer.setSize(innerWidth, innerHeight);
-renderer.setPixelRatio(Math.min(devicePixelRatio,1.6));
+renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.sRGBEncoding;
-renderer.toneMapping=THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure=0.9;
 
-scene.add(new THREE.HemisphereLight(0xffffff, 0x4a7a2e, 0.8));
+scene.add(new THREE.HemisphereLight(0xffffff, 0x3a5f2a, 0.9));
 scene.add(new THREE.AmbientLight(0xffffff,0.35));
-const sun=new THREE.DirectionalLight(0xfff6e0,0.8);
-sun.position.set(100,150,80); sun.castShadow=true;
+const sun=new THREE.DirectionalLight(0xfff6e0,0.85);
+sun.position.set(120,160,90); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
 sun.shadow.camera.left=-200; sun.shadow.camera.right=200; sun.shadow.camera.top=200; sun.shadow.camera.bottom=-200;
+sun.shadow.bias=-0.0003;
 scene.add(sun);
 
-const loader=new THREE.TextureLoader();
-// REAL TEXTURES - BGMI JAISE
-const grassColor=loader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg');
-grassColor.wrapS=grassColor.wrapT=THREE.RepeatWrapping; grassColor.repeat.set(8,8);
-const grassBump=loader.load('https://threejs.org/examples/textures/terrain/grasslight-big-nm.jpg');
-grassBump.wrapS=grassBump.wrapT=THREE.RepeatWrapping; grassBump.repeat.set(8,8);
-const rockColor=loader.load('https://threejs.org/examples/textures/terrain/grasslight-big.jpg'); // fallback
-rockColor.wrapS=rockColor.wrapT=THREE.RepeatWrapping;
-
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({ map:grassColor, bumpMap:grassBump, bumpScale:0.8, roughness:0.9 }));
+// REAL HD GROUND - DARK GRASS + DIRT LIKE 2ND PHOTO
+function makeRealGrass(){
+  const c=document.createElement('canvas'); c.width=c.height=1024;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#3a5f2a'; ctx.fillRect(0,0,1024,1024); // dark green base like 2nd image
+  // dirt paths - horizontal and vertical like in 2nd image
+  ctx.fillStyle='#8a7a5a';
+  ctx.fillRect(460,0,110,1024); // main road
+  ctx.fillRect(0,480,1024,90);
+  // grass variation
+  for(let i=0;i<20000;i++){
+    let x=Math.random()*1024, y=Math.random()*1024;
+    let isDirt = (x>460 && x<570) || (y>480 && y<570);
+    if(isDirt) continue;
+    let col = Math.random()>0.5 ? '#4a7a32' : '#5a8a3a';
+    if(Math.random()>0.9) col='#2e4a22'; // darker patches
+    ctx.fillStyle=col;
+    ctx.fillRect(x,y,3, Math.random()*4+2);
+  }
+  const tex=new THREE.CanvasTexture(c);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(3,3);
+  tex.encoding=THREE.sRGBEncoding;
+  return tex;
+}
+const groundTex=makeRealGrass();
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({ map:groundTex, roughness:0.95, metalness:0.02 }));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
-// Dirt paths like your 2nd image
-const pathMat=new THREE.MeshStandardMaterial({color:0xc2b280, roughness:1});
-const path1=new THREE.Mesh(new THREE.PlaneGeometry(12, MAP), pathMat); path1.rotation.x=-Math.PI/2; path1.position.set(0,0.02,0); path1.receiveShadow=true; scene.add(path1);
-const path2=new THREE.Mesh(new THREE.PlaneGeometry(MAP, 10), pathMat); path2.rotation.x=-Math.PI/2; path2.position.set(0,0.02,30); path2.receiveShadow=true; scene.add(path2);
-
-// CHARACTER - BLUE BGMI LOOK
+// CHARACTER - DARK HELMET LIKE 2ND IMAGE
 const charGroup=new THREE.Group();
-const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.3,0.7), new THREE.MeshStandardMaterial({color:0x2a4bff, roughness:0.6})); body.position.y=2.5; body.castShadow=true; charGroup.add(body);
-const head=new THREE.Mesh(new THREE.SphereGeometry(0.5,12,12), new THREE.MeshStandardMaterial({color:0x333333, roughness:0.4})); head.position.y=4.15; head.castShadow=true; charGroup.add(head);
-const legs=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.5,0.7), new THREE.MeshStandardMaterial({color:0x1e3a8a})); legs.position.y=0.8; legs.castShadow=true; charGroup.add(legs);
-const vest=new THREE.Mesh(new THREE.BoxGeometry(0.9,1.0,0.5), new THREE.MeshStandardMaterial({color:0x555555})); vest.position.set(0,2.6,-0.55); vest.castShadow=true; charGroup.add(vest);
+const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.2,0.65), new THREE.MeshStandardMaterial({color:0x2a4bff, roughness:0.7})); body.position.y=2.4; body.castShadow=true; charGroup.add(body);
+const helmet=new THREE.Mesh(new THREE.SphereGeometry(0.5,12,12), new THREE.MeshStandardMaterial({color:0x2a2a2a, roughness:0.4})); helmet.position.y=4.05; helmet.castShadow=true; charGroup.add(helmet);
+const legs=new THREE.Mesh(new THREE.BoxGeometry(1.0,1.5,0.65), new THREE.MeshStandardMaterial({color:0x1e3a8a})); legs.position.y=0.75; legs.castShadow=true; charGroup.add(legs);
+const backpack=new THREE.Mesh(new THREE.BoxGeometry(0.85,1.05,0.45), new THREE.MeshStandardMaterial({color:0x3a3a3a})); backpack.position.set(0,2.55,-0.6); backpack.castShadow=true; charGroup.add(backpack);
 charGroup.position.set(-140,0,140); scene.add(charGroup);
 
 function box(x,z,w,h,d,c){
-  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:0.8}));
   m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
 }
 function realisticRock(x,z){
-  const g=new THREE.Group();
-  for(let i=0;i<6;i++){
-    const s=2.5+Math.random()*2.8;
-    const geo=new THREE.IcosahedronGeometry(s,1);
-    const m=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x7a6a55, roughness:0.95, metalness:0.05}));
-    m.position.set((Math.random()-0.5)*2.5, s*0.5+Math.random(), (Math.random()-0.5)*2.5);
-    m.rotation.set(Math.random()*3,Math.random()*3,Math.random()*3);
-    m.castShadow=true; m.receiveShadow=true; g.add(m);
+  const group=new THREE.Group();
+  const baseColors=[0x6b5a4a,0x7a6a55,0x5a4d41];
+  for(let i=0;i<7;i++){
+    const s=2.2+Math.random()*2.5;
+    const geo=new THREE.DodecahedronGeometry(s,0);
+    const pos=geo.attributes.position;
+    for(let j=0;j<pos.count;j++){ pos.setXYZ(j, pos.getX(j)+(Math.random()-0.5)*0.7, pos.getY(j)+(Math.random()-0.5)*0.7, pos.getZ(j)+(Math.random()-0.5)*0.7); }
+    pos.needsUpdate=true;
+    const mat=new THREE.MeshStandardMaterial({color:baseColors[i%3], roughness:0.95});
+    const m=new THREE.Mesh(geo, mat);
+    m.position.set((Math.random()-0.5)*3, s*0.6+Math.random()*1.5, (Math.random()-0.5)*3);
+    m.rotation.set(Math.random()*Math.PI, Math.random()*Math.PI, Math.random()*Math.PI);
+    m.castShadow=true; m.receiveShadow=true; group.add(m);
   }
-  // moss on top like image
-  const moss=new THREE.Mesh(new THREE.SphereGeometry(4,8,6), new THREE.MeshStandardMaterial({color:0x4a6a2a, roughness:1}));
-  moss.position.set(0,4.5,0); moss.scale.set(1.2,0.4,1.2); g.add(moss);
-  g.position.set(x,0,z); scene.add(g);
+  // moss
+  const moss=new THREE.Mesh(new THREE.SphereGeometry(3.5,8,6), new THREE.MeshStandardMaterial({color:0x4a6a2a, roughness:1}));
+  moss.position.set(0.5,5.2,0.3); moss.scale.set(1.3,0.5,1.1); group.add(moss);
+  group.position.set(x,0,z); scene.add(group);
 }
-function wall(cx,cz,w,d){ const t=2,h=5.5,col=0xd2c4a0; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
-function wallGate(cx,cz,w,d){ const t=2,h=5.5,col=0xd2c4a0, gate=12; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col); }
+function wall(cx,cz,w,d){ const col=0xd2c4a0; const t=2,h=5.5; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
+function wallGate(cx,cz,w,d){ const col=0xd2c4a0, t=2,h=5.5,gate=12; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col); }
+function house(x,z){ box(x,z,20,11,16,0x9a9a9a); box(x,z,18,2,14,0x5a5a5a); }
 
-function house(x,z){ box(x,z,18,10,14,0x8a8a8a); box(x,z,16,2,12,0x6a6a6a); }
-
-// MAP OBJECTS
+// MAP
 for(let sx of [-140,140]) for(let sz of [-140,140]){
   for(let i=0;i<5;i++){
-    const tx=sx+(Math.random()-0.5)*38, tz=sz+(Math.random()-0.5)*38;
+    const tx=sx+(Math.random()-0.5)*40, tz=sz+(Math.random()-0.5)*40;
     box(tx,tz,1.5,8,1.5,0x3d2817);
-    const lv=new THREE.Mesh(new THREE.SphereGeometry(5,8,6), new THREE.MeshStandardMaterial({color:0x2e7a2e})); lv.position.set(tx,11,tz); lv.castShadow=true; scene.add(lv);
+    const lv=new THREE.Mesh(new THREE.SphereGeometry(4.8,7,6), new THREE.MeshStandardMaterial({color:0x2e7a2e})); lv.position.set(tx,10.5,tz); lv.castShadow=true; scene.add(lv);
   }
 }
-house(80,110); house(-20,120);
+house(85,115); house(-15,125);
 wallGate(35,85,34,22); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
-realisticRock(15,38); realisticRock(-18,-2); realisticRock(-48,-28); realisticRock(8,-28); realisticRock(70,0); realisticRock(105,-10); realisticRock(0,-50);
+realisticRock(15,38); realisticRock(-18,-2); realisticRock(-48,-28); realisticRock(8,-28); realisticRock(70,0); realisticRock(105,-10); realisticRock(0,-50); realisticRock(25,65);
 box(-80,70,18,6,7,0x8b3a2a); box(-100,55,18,6,7,0x8b3a2a); box(40,60,18,6,7,0x8b3a2a);
 [[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],16,5,7,0x4a2e1a));
 [[-60,108],[-35,108],[0,125],[-145,28],[10,90],[110,5],[80,-60],[0,-70],[50,-95],[70,70],[5,20],[20,-10]].forEach(p=> box(p[0],p[1],4.2,3.2,4.2,0x6b5a2e));
 [[-115,28],[-105,-28],[110,2],[50,-100],[0,-70],[80,-60]].forEach(p=> box(p[0],p[1],6,5,6,0x7a6a3e));
 [[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]].forEach(p=> box(p[0],p[1],3.2,5,3.2,0x151515));
 
-// JOYSTICK & CAM FIX
+// CONTROLS - FIXED CAMERA NO ATAK
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
@@ -134,7 +148,7 @@ document.addEventListener('touchstart', e=>{
 document.addEventListener('touchmove', e=>{
   for(let t of e.touches){
     if(t.identifier===joyId) handleJoy(t);
-    if(t.identifier===camId){ let dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.5; camPitch+=dy*0.6; camPitch=Math.max(-35,Math.min(55,camPitch)); camLx=t.clientX; camLy=t.clientY; }
+    if(t.identifier===camId){ let dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.48; camPitch+=dy*0.6; camPitch=Math.max(-35,Math.min(55,camPitch)); camLx=t.clientX; camLy=t.clientY; }
   }
 },{passive:false});
 document.addEventListener('touchend', e=>{
@@ -156,14 +170,13 @@ function handleJoy(t){
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
-  if(s==='stand'){ charGroup.scale.y=1; body.position.y=2.5; head.position.y=4.15; curSpeed=SPEEDS.stand; }
-  if(s==='crouch'){ charGroup.scale.y=0.65; body.position.y=1.6; head.position.y=2.9; curSpeed=SPEEDS.crouch; }
-  if(s==='prone'){ charGroup.scale.y=0.3; body.position.y=0.6; head.position.y=1.1; curSpeed=SPEEDS.prone; }
+  if(s==='stand'){ charGroup.scale.y=1; body.position.y=2.4; helmet.position.y=4.05; curSpeed=SPEEDS.stand; }
+  if(s==='crouch'){ charGroup.scale.y=0.65; body.position.y=1.55; helmet.position.y=2.85; curSpeed=SPEEDS.crouch; }
+  if(s==='prone'){ charGroup.scale.y=0.3; body.position.y=0.55; helmet.position.y=1.05; curSpeed=SPEEDS.prone; }
 }
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
 crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
 proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone');},{passive:false});
-
 function animate(){
   requestAnimationFrame(animate);
   camYaw+=(targetYaw-camYaw)*0.18;
@@ -182,7 +195,7 @@ function animate(){
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.5+1.5;
   camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
-  document.getElementById('top').textContent=`${(curSpeed/3.28084).toFixed(2)} m/s | ${state.toUpperCase()} LOCKED | HD TEXTURES ON`;
+  document.getElementById('top').textContent=`${(curSpeed/3.28084).toFixed(2)} m/s | ${state.toUpperCase()} LOCKED | REAL HD`;
   renderer.render(scene,camera);
 }
 animate();

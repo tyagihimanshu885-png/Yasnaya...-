@@ -82,17 +82,35 @@ scene.add(charGroup);
 charGroup.position.set(-140,0,140);
 let mixer=null, actions={}, soldierModel=null;
 const gltfLoader=new GLTFLoader();
-gltfLoader.load('models/Soldier.glb', (gltf)=>{
+
+function onModelLoaded(gltf){
   const model=gltf.scene;
   model.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }});
   model.scale.set(1.8,1.8,1.8);
   soldierModel=model;
+  model.position.set(0,0,0);
+  model.rotation.set(0,0,0);
   charGroup.add(model);
   mixer=new THREE.AnimationMixer(model);
   gltf.animations.forEach(clip=>{ actions[clip.name.toLowerCase()]=mixer.clipAction(clip); });
   if(actions['idle']) actions['idle'].play();
   document.getElementById('loading').style.display='none';
-}, undefined, (e)=>{ document.getElementById('loading').innerHTML='MODEL NOT FOUND - models/Soldier.glb check karo'; console.log(e); });
+}
+function onFinalFail(){
+  document.getElementById('loading').style.display='none';
+  const dummy = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8), new THREE.MeshStandardMaterial({color:0x1a5a1a}));
+  body.position.y=1.1; body.castShadow=true;
+  dummy.add(body);
+  charGroup.add(dummy);
+  soldierModel = dummy;
+}
+
+gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{
+  gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{
+    gltfLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onModelLoaded, undefined, onFinalFail);
+  });
+});
 
 function box(x,z,w,h,d,c){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:0.85}));
@@ -103,7 +121,6 @@ function wallGate(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5,gate=12; box(cx-w/2,cz,
 wallGate(35,85,34,22); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
 [[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],16,5,7,0x4a2e1a));
 
-// CONTROLS - BGMI STYLE FIX
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
@@ -131,22 +148,28 @@ function handleJoy(t){
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   if(dist<5){ moveX=0; moveZ=0; return; }
-  let nx=dx/max, nz=-dy/max; // BGMI FIX: -dy for forward
+  let nx=dx/max, nz=-dy/max;
   moveX=nx; moveZ=nz;
   if(actions['walk'] && !actions['walk'].isRunning()){ actions['idle']?.stop(); actions['walk'].play(); }
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){
   state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
-  // BGMI FIX: Scale kabhi change mat karo, warna bada dikhega
   charGroup.scale.set(1,1,1);
-  if(soldierModel){ soldierModel.rotation.x=0; soldierModel.position.y=0; }
+  if(soldierModel){ 
+    soldierModel.rotation.x=0; 
+    soldierModel.position.set(0,0,0);
+    soldierModel.scale.set(1.8,1.8,1.8);
+  }
   if(s==='stand'){ curSpeed=SPEEDS.stand; }
-  if(s==='crouch'){ curSpeed=SPEEDS.crouch; }
+  if(s==='crouch'){ curSpeed=SPEEDS.crouch; if(soldierModel) soldierModel.position.y=-0.3; }
   if(s==='prone'){ 
     curSpeed=SPEEDS.prone; 
-    // Prone me sirf model ko letana hai, scale nahi
-    if(soldierModel){ soldierModel.rotation.x=-Math.PI/2; soldierModel.position.y=0.2; soldierModel.position.z=0.5; }
+    if(soldierModel){ 
+      soldierModel.rotation.x=-Math.PI/2; 
+      soldierModel.position.y=0.25; 
+      soldierModel.position.z=0.4; 
+    }
   }
 }
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
@@ -161,7 +184,6 @@ function animate(){
   camYaw+=(targetYaw-camYaw)*0.12;
   if(moveX!==0||moveZ!==0){
     const rad=THREE.MathUtils.degToRad(camYaw);
-    // BGMI FORMULA FIX - Joystick reverse khatam
     const finalX = moveZ*Math.sin(rad) + moveX*Math.cos(rad);
     const finalZ = moveZ*Math.cos(rad) - moveX*Math.sin(rad);
     charGroup.position.x+=finalX*curSpeed*0.09;
@@ -176,7 +198,7 @@ function animate(){
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.5;
   camera.lookAt(charGroup.position.x, charGroup.position.y+1.2, charGroup.position.z);
-  document.getElementById('top').textContent=`${state.toUpperCase()} | Speed ${curSpeed} | BGMI CAM`;
+  document.getElementById('top').textContent=`${state.toUpperCase()} | Speed ${curSpeed} | BGMI CAM OK`;
   renderer.render(scene,camera);
 }
 animate();

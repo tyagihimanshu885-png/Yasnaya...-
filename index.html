@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
-<title>TDM 350 - BGMI EXACT + MULTI-TOUCH</title>
+<title>TDM 350 - FINAL FIX</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none}
 html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;position:fixed;overscroll-behavior:none}
@@ -24,7 +24,7 @@ html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;p
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
 <div id="cam"></div>
-<div id="top">EXACT IMAGE MAP + BGMI MULTI-TOUCH</div>
+<div id="top">FINAL FIX - SPEED LOCK + COVER</div>
 <div id="btns">
 <button class="b active" id="stand">STANDING</button>
 <button class="b" id="crouch">CROUCH</button>
@@ -32,13 +32,8 @@ html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;p
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// SPEED LOCK - NO SPRINT
 const MAP=350;
-const SPEEDS={
-  stand: 15.39, // 4.69 m/s
-  crouch: 4.26, // 1.30 m/s
-  prone: 3.28 // 1.0 m/s
-};
+const SPEEDS={ stand: 15.39, crouch: 4.26, prone: 3.28 };
 let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=20;
 const canvas=document.getElementById('game');
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x4a8a2e);
@@ -64,7 +59,12 @@ function wallWithGate(cx,cz,w,d,gateSide='bottom'){
   else { box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
 }
 for(let sx of [-140,140]) for(let sz of [-140,140]){
-  for(let i=0;i<7;i++){ const tx=sx+(Math.random()-0.5)*40, tz=sz+(Math.random()-0.5)*40; const tr=box(tx,tz,1.2,7,1.2,0x3d2b1f); const lv=new THREE.Mesh(new THREE.SphereGeometry(5.5,6,6), new THREE.MeshLambertMaterial({color:0x1a5a1a})); lv.position.set(tr.position.x,10,tr.position.z); scene.add(lv); }
+  for(let i=0;i<7;i++){ 
+    const tx=sx+(Math.random()-0.5)*40, tz=sz+(Math.random()-0.5)*40; 
+    const trunk=box(tx,tz,4,7,4,0x3d2b1f); 
+    const leaves=new THREE.Mesh(new THREE.SphereGeometry(6.5,7,7), new THREE.MeshLambertMaterial({color:0x1a5a1a})); 
+    leaves.position.set(trunk.position.x,12,trunk.position.z); scene.add(leaves); 
+  }
 }
 box(-48,130,15,10,12,0x5a4a3a); box(50,130,18,12,14,0x5a4a3a); box(-130,0,15,10,12,0x5a4a3a); box(105,20,15,10,12,0x5a4a3a); box(130,-50,18,12,14,0x5a4a3a); box(-48,-145,15,10,12,0x5a4a3a); box(18,-145,15,10,12,0x5a4a3a);
 wallWithGate(35,85,34,22,'bottom'); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
@@ -82,31 +82,29 @@ smallCrates.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x8b6a2e));
 largeCrates.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x9a7a3e));
 [[45,-75,8,3,1.5],[65,-75,8,3,1.5],[65,-10,8,3,1.5],[120,10,8,3,1.5],[115,18,1.5,3,8],[130,-55,8,3,1.5],[-30,-105,8,3,1.5],[-30,-85,8,3,1.5]].forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x777777));
 [[-95,55,8,0.5,1],[ -140,5,8,0.5,1],[-130,-20,8,0.5,1],[-65,-15,8,0.5,1],[-15,-35,8,0.5,1],[40,-5,8,0.5,1],[70,35,8,0.5,1],[120,5,8,0.5,1],[95,-105,8,0.5,1],[10,-125,8,0.5,1]].forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0xc2a67a));
-const tyres=[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[70,0],[125,0],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]];
-tyres.forEach(p=>{ const t=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.4,6,12), new THREE.MeshLambertMaterial({color:0x111111})); t.position.set(p[0],0.6,p[1]); t.rotation.x=Math.PI/2; scene.add(t); });
 
-// MULTI-TOUCH BGMI
-const joy=document.getElementById('joy'), knob=document.getElementById('knob'), camArea=document.getElementById('cam');
+// TYRES - 5FT x 3FT COVER
+const tyres=[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[70,0],[125,0],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]];
+tyres.forEach(p=>{ 
+  box(p[0],p[1],3,5,3,0x1a1a1a); 
+  const t=new THREE.Mesh(new THREE.TorusGeometry(1.3,0.5,6,12), new THREE.MeshLambertMaterial({color:0x111111})); 
+  t.position.set(p[0],4.5,p[1]); t.rotation.x=Math.PI/2; scene.add(t);
+});
+
+const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyTouchId=null, camTouchId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const rc=joy.getBoundingClientRect(); return {x:rc.left+rc.width/2, y:rc.top+rc.height/2}; }
 document.addEventListener('touchstart', e=>{
   for(let t of e.changedTouches){
-    if(t.clientX < window.innerWidth*0.4 && joyTouchId===null){
-      joyTouchId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); goFS();
-    } else if(t.clientX > window.innerWidth*0.4 && camTouchId===null){
-      camTouchId=t.identifier; camLx=t.clientX; camLy=t.clientY; goFS();
-    }
+    if(t.clientX < window.innerWidth*0.4 && joyTouchId===null){ joyTouchId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); goFS(); }
+    else if(t.clientX > window.innerWidth*0.4 && camTouchId===null){ camTouchId=t.identifier; camLx=t.clientX; camLy=t.clientY; goFS(); }
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
 document.addEventListener('touchmove', e=>{
   for(let t of e.touches){
     if(t.identifier===joyTouchId){ handleJoy(t); }
-    if(t.identifier===camTouchId){
-      const dx=t.clientX-camLx, dy=t.clientY-camLy;
-      targetYaw -= dx*0.5; camPitch += dy*0.8; camPitch=Math.max(-45,Math.min(70,camPitch));
-      camLx=t.clientX; camLy=t.clientY;
-    }
+    if(t.identifier===camTouchId){ const dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw -= dx*0.5; camPitch += dy*0.8; camPitch=Math.max(-45,Math.min(70,camPitch)); camLx=t.clientX; camLy=t.clientY; }
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
@@ -117,12 +115,23 @@ document.addEventListener('touchend', e=>{
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
+
+// FINAL FIXED JOYSTICK LOGIC
 function handleJoy(t){
   let dx=t.clientX-joyCx, dy=t.clientY-joyCy, dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  moveX=dx/max; moveZ=-dy/max;
-  // NO SPRINT LOGIC - FIXED SPEED
+  if(dist < 0.5){ moveX=0; moveZ=0; return; }
+  let normX = dx / dist;
+  let normY = dy / dist;
+  if(dist >= max*0.85){
+    moveX = normX;
+    moveZ = -normY;
+  } else {
+    let slowFactor = (dist / max) * 0.55;
+    moveX = normX * slowFactor;
+    moveZ = -normY * slowFactor;
+  }
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone'); if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.7; legs.scale.y=1; curSpeed=SPEEDS.stand; } if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; curSpeed=SPEEDS.crouch; } if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; curSpeed=SPEEDS.prone; } }
@@ -157,7 +166,9 @@ function animate(){
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.6 + 2;
   camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
-  document.getElementById('top').textContent=`${(curSpeed/3.28084).toFixed(2)} m/s | ${state.toUpperCase()} LOCKED`;
+  let ms = (curSpeed/3.28084).toFixed(2);
+  let joyState = (Math.sqrt(moveX*moveX+moveZ*moveZ) > 0.8) ? "FIXED" : "SLOW";
+  document.getElementById('top').textContent=`${ms} m/s | ${state.toUpperCase()} | ${joyState}`;
   renderer.render(scene,camera);
 }
 animate();

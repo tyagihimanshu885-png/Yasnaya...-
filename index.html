@@ -2,159 +2,206 @@
 <html>
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, interactive-widget=resizes-content">
-<title>TDM 350 - FINAL FIX</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>TDM 350 - BGMI GRAPHICS</title>
 <style>
-*{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none;-webkit-user-select:none}
-html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;position:fixed;overscroll-behavior:none}
-#game{position:fixed;left:0;top:0;right:0;bottom:0;width:100vw;width:100dvw;height:100vh;height:100dvh;display:block;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);padding-left:env(safe-area-inset-left,0px);padding-right:env(safe-area-inset-right,0px);background:#4a8a2e}
-#joy{position:fixed;left:5vw;left:calc(5vw + env(safe-area-inset-left,0px));bottom:10vh;bottom:calc(10vh + env(safe-area-inset-bottom,0px));width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
+*{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none}
+html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;position:fixed}
+#game{position:fixed;left:0;top:0;width:100vw;height:100vh;display:block;background:#6baa3e}
+#joy{position:fixed;left:5vw;bottom:10vh;width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
 #knob{position:absolute;left:50%;top:50%;width:44%;height:44%;background:#fff;border-radius:50%;transform:translate(-50%,-50%)}
-#cam{position:fixed;right:0;top:0;width:65vw;height:100vh;height:100dvh;z-index:5}
-#top{position:fixed;top:0;top:env(safe-area-inset-top,0px);left:0;right:0;background:rgba(0,0,0,0.7);color:#0f0;padding:6px;font:700 10px monospace;z-index:20}
-#btns{position:fixed;right:4vw;right:calc(4vw + env(safe-area-inset-right,0px));bottom:10vh;bottom:calc(10vh + env(safe-area-inset-bottom,0px));display:flex;gap:3vw;z-index:10}
+#cam{position:fixed;right:0;top:0;width:65vw;height:100vh;z-index:5}
+#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#7CFF7C;padding:6px;font:700 11px monospace;z-index:20}
+#btns{position:fixed;right:4vw;bottom:10vh;display:flex;gap:3vw;z-index:10}
 .b{width:19vw;max-width:72px;height:19vw;max-height:72px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.6);color:#fff;font:700 10px sans-serif}
-.b.active{background:#00aaff}
-@media screen and (orientation: portrait){
-  body{transform:rotate(90deg);transform-origin:50% 50%;width:100vh;width:100dvh;height:100vw;height:100dvw;position:fixed;left:50%;top:50%;margin-left:-50vh;margin-top:-50vw;overflow:hidden}
-}
+.b.active{background:#00aaff;box-shadow:0 0 12px #00aaff}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
 <div id="cam"></div>
-<div id="top">FINAL FIX - SPEED LOCK + COVER</div>
+<div id="top">BGMI REAL GRAPHICS | 4.69 m/s LOCKED</div>
 <div id="btns">
-<button class="b active" id="stand">STANDING</button>
+<button class="b active" id="stand">STAND</button>
 <button class="b" id="crouch">CROUCH</button>
 <button class="b" id="prone">PRONE</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
+// ===== FINAL SPECS =====
 const MAP=350;
-const SPEEDS={ stand: 15.39, crouch: 4.26, prone: 3.28 };
+const SPEEDS={ stand:15.39, crouch:4.26, prone:3.28 };
 let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=20;
+
 const canvas=document.getElementById('game');
-const scene=new THREE.Scene(); scene.background=new THREE.Color(0x4a8a2e);
+const scene=new THREE.Scene();
+scene.fog = new THREE.Fog(0x8ec76f, 180, 500);
+
 const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
 const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
-scene.add(new THREE.AmbientLight(0xffffff,0.9));
-const sun=new THREE.DirectionalLight(0xffffff,0.7); sun.position.set(60,120,60); scene.add(sun);
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshLambertMaterial({color:0x4a8a2e}));
-ground.rotation.x=-Math.PI/2; scene.add(ground);
-const charGroup=new THREE.Group();
-const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,3,0.9), new THREE.MeshLambertMaterial({color:0x0088ff})); body.position.y=2.6; charGroup.add(body);
-const head=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.9,0.9), new THREE.MeshLambertMaterial({color:0xffdbac})); head.position.y=4.7; charGroup.add(head);
-const legs=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.8,0.9), new THREE.MeshLambertMaterial({color:0x0033aa})); legs.position.y=0.9; charGroup.add(legs);
-charGroup.position.set(-140,0,140); scene.add(charGroup);
-function box(x,z,w,h,d,c){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color:c})); m.position.set(x,h/2,z); scene.add(m); return m; }
-function wall(cx,cz,w,d){ const t=1.5,h=5,col=0x8b7d6b; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
-function wallWithGate(cx,cz,w,d,gateSide='bottom'){
-  const t=1.5,h=5,col=0x8b7d6b, gate=12;
-  box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col);
-  if(gateSide==='bottom'){ box(cx,cz-d/2,w,h,t,col); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col); }
-  else { box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
+renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+
+// LIGHTS - BGMI JAISE
+scene.add(new THREE.HemisphereLight(0xffffff, 0x4a8a2e, 0.8));
+scene.add(new THREE.AmbientLight(0xffffff,0.4));
+const sun=new THREE.DirectionalLight(0xfff8e1,0.9);
+sun.position.set(80,150,60);
+sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-200; sun.shadow.camera.right=200;
+sun.shadow.camera.top=200; sun.shadow.camera.bottom=-200;
+scene.add(sun);
+
+// GRASS TEXTURE - PROCEDURAL
+function makeGrassTex(){
+  const c=document.createElement('canvas'); c.width=c.height=512;
+  const ctx=c.getContext('2d');
+  ctx.fillStyle='#5ea82f'; ctx.fillRect(0,0,512,512);
+  for(let i=0;i<8000;i++){
+    ctx.fillStyle=Math.random()>0.5?'#6fbf3a':'#4a8a2e';
+    ctx.fillRect(Math.random()*512, Math.random()*512, 2, Math.random()*6+1);
+  }
+  return new THREE.CanvasTexture(c);
 }
+const grassMat=new THREE.MeshStandardMaterial({ map:makeGrassTex(), roughness:0.9, metalness:0.05 });
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), grassMat);
+ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
+
+// CHARACTER - BGMI SHADE
+const charGroup=new THREE.Group();
+const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.8,0.9), new THREE.MeshStandardMaterial({color:0x1e90ff, roughness:0.6})); body.position.y=2.6; body.castShadow=true; charGroup.add(body);
+const head=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.85,0.85), new THREE.MeshStandardMaterial({color:0xffd8b0})); head.position.y=4.6; head.castShadow=true; charGroup.add(head);
+const legs=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.7,0.9), new THREE.MeshStandardMaterial({color:0x0a2a8a})); legs.position.y=0.85; legs.castShadow=true; charGroup.add(legs);
+charGroup.position.set(-140,0,140); scene.add(charGroup);
+
+function box(x,z,w,h,d,c,rough=0.8){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:rough}));
+  m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
+}
+function sandbagWall(cx,cz,w,d){
+  const t=2, h=5.5, col=0xc2b280;
+  box(cx-w/2,cz,t,h,d,col,0.95); box(cx+w/2,cz,t,h,d,col,0.95);
+  box(cx,cz-d/2,w,h,t,col,0.95); box(cx,cz+d/2,w,h,t,col,0.95);
+}
+function wallWithGate(cx,cz,w,d){
+  const t=2, h=5.5, col=0xc2b280, gate=12;
+  box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col);
+  box(cx,cz-d/2,w,h,t,col);
+  box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col);
+  box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col);
+}
+
+// TREES - 4FT MOTA TANA + GHANA PATTA
 for(let sx of [-140,140]) for(let sz of [-140,140]){
-  for(let i=0;i<7;i++){ 
-    const tx=sx+(Math.random()-0.5)*40, tz=sz+(Math.random()-0.5)*40; 
-    const trunk=box(tx,tz,4,7,4,0x3d2b1f); 
-    const leaves=new THREE.Mesh(new THREE.SphereGeometry(6.5,7,7), new THREE.MeshLambertMaterial({color:0x1a5a1a})); 
-    leaves.position.set(trunk.position.x,12,trunk.position.z); scene.add(leaves); 
+  for(let i=0;i<7;i++){
+    const tx=sx+(Math.random()-0.5)*42, tz=sz+(Math.random()-0.5)*42;
+    box(tx,tz,4,8,4,0x3d2817,0.9);
+    const leaves=new THREE.Mesh(new THREE.SphereGeometry(6.8,8,7), new THREE.MeshStandardMaterial({color:0x1e6e1e, roughness:0.85}));
+    leaves.position.set(tx,12.5,tz); leaves.castShadow=true; scene.add(leaves);
+    const leaves2=new THREE.Mesh(new THREE.SphereGeometry(4.5,6,6), new THREE.MeshStandardMaterial({color:0x2a8a2a}));
+    leaves2.position.set(tx+1.5,11,tz+1); leaves2.castShadow=true; scene.add(leaves2);
   }
 }
-box(-48,130,15,10,12,0x5a4a3a); box(50,130,18,12,14,0x5a4a3a); box(-130,0,15,10,12,0x5a4a3a); box(105,20,15,10,12,0x5a4a3a); box(130,-50,18,12,14,0x5a4a3a); box(-48,-145,15,10,12,0x5a4a3a); box(18,-145,15,10,12,0x5a4a3a);
-wallWithGate(35,85,34,22,'bottom'); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
-box(65,-5,1.5,5,50,0x8b7d6b); box(80,-50,36,5,1.5,0x8b7d6b); box(80,-20,36,5,1.5,0x8b7d6b); box(98,-40,1.5,5,36,0x8b7d6b);
-box(130,-65,30,5,1.5,0x8b7d6b); box(130,-55,1.5,5,12,0x8b7d6b); box(-30,-105,1.5,5,18,0x8b7d6b);
-box(15,38,12,8,10,0x4a3a2e); box(-18,-2,12,8,10,0x4a3a2e); box(-48,-28,12,8,10,0x4a3a2e); box(8,-28,12,8,10,0x4a3a2e);
-const medRocks=[[75,65,6,4,5],[65,70,6,4,5],[-60,5,6,4,5],[-5,-10,6,4,5],[10,-5,6,4,5],[-45,-50,6,4,5],[55,60,6,4,5],[80,-30,6,4,5]];
-medRocks.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x5a5a5a));
-const smallRocks=[[55,30,3,2.5,3],[40,20,3,2.5,3],[55,5,3,2.5,3],[15,10,3,2.5,3],[-10,-30,3,2.5,3],[10,-50,3,2.5,3],[-35,-45,3,2.5,3],[20,-60,3,2.5,3],[60,-45,3,2.5,3],[65,-10,3,2.5,3]];
-smallRocks.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x6a6a6a));
-[[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],15,5,6,0x3d2b1f));
-const smallCrates=[[-60,108,4,3,4],[-35,108,4,3,4],[0,125,4,3,4],[-145,28,4,3,4],[10,90,4,3,4],[110,5,4,3,4],[80,-60,4,3,4],[0,-70,4,3,4],[50,-95,4,3,4],[70,70,4,3,4],[5,20,4,3,4],[20,-10,4,3,4]];
-const largeCrates=[[-115,28,6,5,6],[-105,-28,6,5,6],[110,2,6,5,6],[50,-100,6,5,6],[0,-70,6,5,6],[80,-60,6,5,6]];
-smallCrates.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x8b6a2e));
-largeCrates.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x9a7a3e));
-[[45,-75,8,3,1.5],[65,-75,8,3,1.5],[65,-10,8,3,1.5],[120,10,8,3,1.5],[115,18,1.5,3,8],[130,-55,8,3,1.5],[-30,-105,8,3,1.5],[-30,-85,8,3,1.5]].forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x777777));
-[[-95,55,8,0.5,1],[ -140,5,8,0.5,1],[-130,-20,8,0.5,1],[-65,-15,8,0.5,1],[-15,-35,8,0.5,1],[40,-5,8,0.5,1],[70,35,8,0.5,1],[120,5,8,0.5,1],[95,-105,8,0.5,1],[10,-125,8,0.5,1]].forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0xc2a67a));
 
-// TYRES - 5FT x 3FT COVER
-const tyres=[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[70,0],[125,0],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]];
-tyres.forEach(p=>{ 
-  box(p[0],p[1],3,5,3,0x1a1a1a); 
-  const t=new THREE.Mesh(new THREE.TorusGeometry(1.3,0.5,6,12), new THREE.MeshLambertMaterial({color:0x111111})); 
-  t.position.set(p[0],4.5,p[1]); t.rotation.x=Math.PI/2; scene.add(t);
+// HOUSES - WOODEN BGMI STYLE
+function house(x,z){
+  box(x,z,16,8,13,0x5a4a3a,0.8);
+  const roof=new THREE.Mesh(new THREE.ConeGeometry(11,5,4), new THREE.MeshStandardMaterial({color:0x4a3a2a, roughness:0.7}));
+  roof.position.set(x,8+2.5,z); roof.rotation.y=Math.PI/4; roof.castShadow=true; scene.add(roof);
+}
+house(-48,130); house(50,130); house(-130,0); house(105,20); house(130,-50); house(-48,-145); house(18,-145);
+
+// RUIN WALLS - EXACT IMAGE
+wallWithGate(35,85,34,22); sandbagWall(-60,55,30,30); sandbagWall(-115,20,36,38);
+sandbagWall(-115,-30,36,44); sandbagWall(80,-40,36,36); sandbagWall(-30,-90,38,24);
+box(65,-5,1.5,5.5,50,0x8b7d6b); box(80,-50,36,5.5,1.5,0x8b7d6b); box(80,-20,36,5.5,1.5,0x8b7d6b); box(98,-40,1.5,5.5,36,0x8b7d6b);
+box(130,-65,30,5.5,1.5,0x8b7d6b); box(130,-55,1.5,5.5,12,0x8b7d6b); box(-30,-105,1.5,5.5,18,0x8b7d6b);
+
+// ROCKS - REALISTIC BGMI BOULDERS
+function boulder(x,z,s){
+  const geo=new THREE.DodecahedronGeometry(s,0);
+  const m=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x5a4d41, roughness:0.95}));
+  m.position.set(x,s*0.6,z); m.rotation.set(Math.random(),Math.random(),Math.random());
+  m.castShadow=true; m.receiveShadow=true; scene.add(m);
+}
+boulder(15,38,7); boulder(-18,-2,8); boulder(-48,-28,7.5); boulder(8,-28,6.5);
+[[75,65,3.5],[65,70,3],[ -60,5,3.2],[-5,-10,2.8],[10,-5,3],[ -45,-50,3.1],[55,60,2.9],[80,-30,3.3]].forEach(p=>boulder(p[0],p[1],p[2]));
+
+// CARS - RUSTED DESTROYED
+[[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=>{
+  box(p[0],p[1],16,5.5,7,0x4a2e1a,0.8);
+  box(p[0],p[1]+0.5,14,2.5,6,0x2e1a0e,0.9);
 });
 
+// CRATES - WOODEN
+[[-60,108],[-35,108],[0,125],[-145,28],[10,90],[110,5],[80,-60],[0,-70],[50,-95],[70,70],[5,20],[20,-10]].forEach(p=>box(p[0],p[1],4.2,3.2,4.2,0x8b6a2e));
+[[-115,28],[-105,-28],[110,2],[50,-100],[0,-70],[80,-60]].forEach(p=>box(p[0],p[1],6.5,5.5,6.5,0x9a7a3e));
+
+// TYRES - 5FT x 3FT COVER - BGMI BLACK
+const tyres=[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[70,0],[125,0],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]];
+tyres.forEach(p=>{
+  box(p[0],p[1],3.2,5,3.2,0x151515);
+  const t=new THREE.Mesh(new THREE.TorusGeometry(1.4,0.55,8,16), new THREE.MeshStandardMaterial({color:0x0a0a0a, roughness:0.9}));
+  t.position.set(p[0],4.6,p[1]); t.rotation.x=Math.PI/2; t.castShadow=true; scene.add(t);
+});
+
+// JOYSTICK - FIXED LOGIC
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyTouchId=null, camTouchId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const rc=joy.getBoundingClientRect(); return {x:rc.left+rc.width/2, y:rc.top+rc.height/2}; }
 document.addEventListener('touchstart', e=>{
   for(let t of e.changedTouches){
-    if(t.clientX < window.innerWidth*0.4 && joyTouchId===null){ joyTouchId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); goFS(); }
-    else if(t.clientX > window.innerWidth*0.4 && camTouchId===null){ camTouchId=t.identifier; camLx=t.clientX; camLy=t.clientY; goFS(); }
+    if(t.clientX < innerWidth*0.4 && joyTouchId===null){ joyTouchId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); }
+    else if(t.clientX > innerWidth*0.4 && camTouchId===null){ camTouchId=t.identifier; camLx=t.clientX; camLy=t.clientY; }
   }
-  if(e.cancelable) e.preventDefault();
+  e.preventDefault();
 },{passive:false});
 document.addEventListener('touchmove', e=>{
   for(let t of e.touches){
-    if(t.identifier===joyTouchId){ handleJoy(t); }
-    if(t.identifier===camTouchId){ const dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw -= dx*0.5; camPitch += dy*0.8; camPitch=Math.max(-45,Math.min(70,camPitch)); camLx=t.clientX; camLy=t.clientY; }
+    if(t.identifier===joyTouchId) handleJoy(t);
+    if(t.identifier===camTouchId){ const dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.45; camPitch+=dy*0.7; camPitch=Math.max(-40,Math.min(65,camPitch)); camLx=t.clientX; camLy=t.clientY; }
   }
-  if(e.cancelable) e.preventDefault();
+  e.preventDefault();
 },{passive:false});
 document.addEventListener('touchend', e=>{
   for(let t of e.changedTouches){
     if(t.identifier===joyTouchId){ joyTouchId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
-    if(t.identifier===camTouchId){ camTouchId=null; }
+    if(t.identifier===camTouchId) camTouchId=null;
   }
-  if(e.cancelable) e.preventDefault();
+  e.preventDefault();
 },{passive:false});
 
-// FINAL FIXED JOYSTICK LOGIC
 function handleJoy(t){
   let dx=t.clientX-joyCx, dy=t.clientY-joyCy, dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   if(dist < 0.5){ moveX=0; moveZ=0; return; }
-  let normX = dx / dist;
-  let normY = dy / dist;
-  if(dist >= max*0.85){
-    moveX = normX;
-    moveZ = -normY;
-  } else {
-    let slowFactor = (dist / max) * 0.55;
-    moveX = normX * slowFactor;
-    moveZ = -normY * slowFactor;
-  }
+  let nx=dx/dist, ny=dy/dist;
+  if(dist>=max*0.85){ moveX=nx; moveZ=-ny; } // BAHAR = FIXED
+  else { let f=(dist/max)*0.55; moveX=nx*f; moveZ=-ny*f; } // ANDAR = SLOW
 }
+
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
-function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone'); if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.7; legs.scale.y=1; curSpeed=SPEEDS.stand; } if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; curSpeed=SPEEDS.crouch; } if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; curSpeed=SPEEDS.prone; } }
-standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand'); goFS();},{passive:false});
-crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch'); goFS();},{passive:false});
-proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone'); goFS();},{passive:false});
-let fsDone=false;
-function goFS(){
-  if(fsDone) return; fsDone=true;
-  const el=document.documentElement;
-  if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-  if(screen.orientation && screen.orientation.lock){ screen.orientation.lock('landscape').catch(()=>{}); }
-  window.scrollTo(0,1);
-  setTimeout(()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); },200);
+function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
+  if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.6; legs.scale.y=1; curSpeed=SPEEDS.stand; }
+  if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; curSpeed=SPEEDS.crouch; }
+  if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; curSpeed=SPEEDS.prone; }
 }
-document.addEventListener('touchstart', goFS, {once:true});
+standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
+crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
+proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone');},{passive:false});
+
 function animate(){
   requestAnimationFrame(animate);
-  camYaw+=(targetYaw-camYaw)*0.15;
+  camYaw+=(targetYaw-camYaw)*0.13;
   if(moveX!==0||moveZ!==0){
     const rad=THREE.MathUtils.degToRad(camYaw);
-    const finalX = -moveZ*Math.sin(rad) + moveX*Math.cos(rad);
-    const finalZ = -moveZ*Math.cos(rad) - moveX*Math.sin(rad);
+    const finalX=-moveZ*Math.sin(rad)+moveX*Math.cos(rad);
+    const finalZ=-moveZ*Math.cos(rad)-moveX*Math.sin(rad);
     charGroup.position.x+=finalX*curSpeed*0.06;
     charGroup.position.z+=finalZ*curSpeed*0.06;
     charGroup.rotation.y=Math.atan2(finalX,finalZ);
@@ -164,11 +211,10 @@ function animate(){
   const yawRad=THREE.MathUtils.degToRad(camYaw), pitchRad=THREE.MathUtils.degToRad(camPitch);
   camera.position.x=charGroup.position.x+Math.sin(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
-  camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.6 + 2;
+  camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.6+2;
   camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
-  let ms = (curSpeed/3.28084).toFixed(2);
-  let joyState = (Math.sqrt(moveX*moveX+moveZ*moveZ) > 0.8) ? "FIXED" : "SLOW";
-  document.getElementById('top').textContent=`${ms} m/s | ${state.toUpperCase()} | ${joyState}`;
+  let ms=(curSpeed/3.28084).toFixed(2);
+  document.getElementById('top').textContent=`${ms} m/s | ${state.toUpperCase()} | BGMI GRAPHICS ON`;
   renderer.render(scene,camera);
 }
 animate();

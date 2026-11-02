@@ -3,201 +3,187 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>TDM 350 - BGMI GRAPHICS</title>
+<title>TDM 350 - BGMI ULTRA HD</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none}
-html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;position:fixed}
-#game{position:fixed;left:0;top:0;width:100vw;height:100vh;display:block;background:#6baa3e}
-#joy{position:fixed;left:5vw;bottom:10vh;width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
+html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
+#game{position:fixed;left:0;top:0;width:100vw;height:100vh}
+#joy{position:fixed;left:5vw;bottom:10vh;width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.18);z-index:10}
 #knob{position:absolute;left:50%;top:50%;width:44%;height:44%;background:#fff;border-radius:50%;transform:translate(-50%,-50%)}
-#cam{position:fixed;right:0;top:0;width:65vw;height:100vh;z-index:5}
-#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.6);color:#7CFF7C;padding:6px;font:700 11px monospace;z-index:20}
-#btns{position:fixed;right:4vw;bottom:10vh;display:flex;gap:3vw;z-index:10}
-.b{width:19vw;max-width:72px;height:19vw;max-height:72px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.6);color:#fff;font:700 10px sans-serif}
-.b.active{background:#00aaff;box-shadow:0 0 12px #00aaff}
+#cam{position:fixed;right:0;top:0;width:60vw;height:100vh;z-index:5}
+#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.45);color:#00ff88;padding:6px 10px;font:700 12px monospace;z-index:20;backdrop-filter:blur(4px)}
+#btns{position:fixed;right:3vw;bottom:10vh;display:flex;gap:2.5vw;z-index:10}
+.b{width:18vw;max-width:70px;height:18vw;max-height:70px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.5);color:#fff;font:700 10px sans-serif;backdrop-filter:blur(2px)}
+.b.active{background:#00aaff;box-shadow:0 0 15px #00aaff}
 </style>
 </head>
 <body>
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
 <div id="cam"></div>
-<div id="top">BGMI REAL GRAPHICS | 4.69 m/s LOCKED</div>
+<div id="top">4.69 m/s | STAND LOCKED | BGMI ULTRA</div>
 <div id="btns">
-<button class="b active" id="stand">STAND</button>
+<button class="b active" id="stand">STANDING</button>
 <button class="b" id="crouch">CROUCH</button>
 <button class="b" id="prone">PRONE</button>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-// ===== FINAL SPECS =====
 const MAP=350;
 const SPEEDS={ stand:15.39, crouch:4.26, prone:3.28 };
-let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=20;
+let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=15;
 
 const canvas=document.getElementById('game');
 const scene=new THREE.Scene();
-scene.fog = new THREE.Fog(0x8ec76f, 180, 500);
+scene.background=new THREE.Color(0x87ceeb); // sky like image
+scene.fog=new THREE.Fog(0xc2d8a8, 200, 550);
 
-const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
+const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 800);
 const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
 renderer.setSize(innerWidth, innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
 renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputEncoding=THREE.sRGBEncoding;
 
-// LIGHTS - BGMI JAISE
-scene.add(new THREE.HemisphereLight(0xffffff, 0x4a8a2e, 0.8));
+// LIGHTS - IMAGE JAISE BRIGHT DAYLIGHT
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8fbf6f, 0.9));
 scene.add(new THREE.AmbientLight(0xffffff,0.4));
-const sun=new THREE.DirectionalLight(0xfff8e1,0.9);
-sun.position.set(80,150,60);
-sun.castShadow=true;
+const sun=new THREE.DirectionalLight(0xfff6e0,0.85);
+sun.position.set(120,160,80); sun.castShadow=true;
 sun.shadow.mapSize.set(2048,2048);
-sun.shadow.camera.left=-200; sun.shadow.camera.right=200;
-sun.shadow.camera.top=200; sun.shadow.camera.bottom=-200;
+sun.shadow.camera.left=-200; sun.shadow.camera.right=200; sun.shadow.camera.top=200; sun.shadow.camera.bottom=-200;
+sun.shadow.bias=-0.0005;
 scene.add(sun);
 
-// GRASS TEXTURE - PROCEDURAL
-function makeGrassTex(){
-  const c=document.createElement('canvas'); c.width=c.height=512;
+function makeUltraGrass(){
+  const c=document.createElement('canvas'); c.width=c.height=1024;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#5ea82f'; ctx.fillRect(0,0,512,512);
-  for(let i=0;i<8000;i++){
-    ctx.fillStyle=Math.random()>0.5?'#6fbf3a':'#4a8a2e';
-    ctx.fillRect(Math.random()*512, Math.random()*512, 2, Math.random()*6+1);
+  ctx.fillStyle='#8fb86f'; ctx.fillRect(0,0,1024,1024);
+  // dirt roads like image
+  ctx.fillStyle='#c2b280';
+  ctx.fillRect(200,0,120,1024); ctx.fillRect(0,400,1024,100);
+  // grass patches
+  for(let i=0;i<15000;i++){
+    let x=Math.random()*1024, y=Math.random()*1024;
+    let g=Math.random()>0.5?'#7fc24a':'#a8d86e';
+    if(Math.random()>0.85) g='#d9c39a'; // dry grass
+    ctx.fillStyle=g; ctx.fillRect(x,y,4,4);
   }
-  return new THREE.CanvasTexture(c);
+  const tex=new THREE.CanvasTexture(c);
+  tex.wrapS=tex.wrapT=THREE.RepeatWrapping; tex.repeat.set(2,2);
+  return tex;
 }
-const grassMat=new THREE.MeshStandardMaterial({ map:makeGrassTex(), roughness:0.9, metalness:0.05 });
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), grassMat);
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({ map:makeUltraGrass(), roughness:0.95 }));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
-// CHARACTER - BGMI SHADE
+// CHARACTER - BGMI BLUE UNIFORM
 const charGroup=new THREE.Group();
-const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,2.8,0.9), new THREE.MeshStandardMaterial({color:0x1e90ff, roughness:0.6})); body.position.y=2.6; body.castShadow=true; charGroup.add(body);
-const head=new THREE.Mesh(new THREE.BoxGeometry(0.85,0.85,0.85), new THREE.MeshStandardMaterial({color:0xffd8b0})); head.position.y=4.6; head.castShadow=true; charGroup.add(head);
-const legs=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.7,0.9), new THREE.MeshStandardMaterial({color:0x0a2a8a})); legs.position.y=0.85; legs.castShadow=true; charGroup.add(legs);
+const bodyMat=new THREE.MeshStandardMaterial({color:0x2a4bff, roughness:0.6});
+const body=new THREE.Mesh(new THREE.BoxGeometry(1.2,2.4,0.7), bodyMat); body.position.y=2.5; body.castShadow=true; charGroup.add(body);
+const head=new THREE.Mesh(new THREE.SphereGeometry(0.45,10,10), new THREE.MeshStandardMaterial({color:0x222222})); head.position.y=4.2; head.castShadow=true; charGroup.add(head); // helmet like image
+const legs=new THREE.Mesh(new THREE.BoxGeometry(1.1,1.6,0.7), new THREE.MeshStandardMaterial({color:0x1e3a8a})); legs.position.y=0.8; legs.castShadow=true; charGroup.add(legs);
+const backpack=new THREE.Mesh(new THREE.BoxGeometry(0.8,1.0,0.4), new THREE.MeshStandardMaterial({color:0x444444})); backpack.position.set(0,2.6,-0.6); backpack.castShadow=true; charGroup.add(backpack);
 charGroup.position.set(-140,0,140); scene.add(charGroup);
 
-function box(x,z,w,h,d,c,rough=0.8){
+function box(x,z,w,h,d,c,rough=0.85){
   const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:rough}));
   m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m;
 }
-function sandbagWall(cx,cz,w,d){
-  const t=2, h=5.5, col=0xc2b280;
-  box(cx-w/2,cz,t,h,d,col,0.95); box(cx+w/2,cz,t,h,d,col,0.95);
-  box(cx,cz-d/2,w,h,t,col,0.95); box(cx,cz+d/2,w,h,t,col,0.95);
+function containerBox(x,z){
+  // rusted container like image
+  box(x,z,18,6,7,0x7a3a2a,0.7);
+  box(x,z+0.3,17.5,0.4,6.5,0x8b4a3a,0.6);
 }
-function wallWithGate(cx,cz,w,d){
-  const t=2, h=5.5, col=0xc2b280, gate=12;
-  box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col);
-  box(cx,cz-d/2,w,h,t,col);
-  box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col);
-  box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col);
+function bigBoulder(x,z){
+  const group=new THREE.Group();
+  const colors=[0x8d7a65,0x7a6a55,0x9a8a75];
+  for(let i=0;i<5;i++){
+    const s=3+Math.random()*3.5;
+    const g=new THREE.DodecahedronGeometry(s,0);
+    // random deform
+    const pos=g.attributes.position;
+    for(let j=0;j<pos.count;j++){ pos.setXYZ(j, pos.getX(j)+(Math.random()-0.5)*0.6, pos.getY(j)+(Math.random()-0.5)*0.6, pos.getZ(j)+(Math.random()-0.5)*0.6); }
+    pos.needsUpdate=true;
+    const m=new THREE.Mesh(g, new THREE.MeshStandardMaterial({color:colors[i%3], roughness:0.95, metalness:0.05}));
+    m.position.set((Math.random()-0.5)*3, s*0.5+Math.random()*2, (Math.random()-0.5)*3);
+    m.castShadow=true; m.receiveShadow=true; group.add(m);
+  }
+  group.position.set(x,0,z); scene.add(group);
 }
+function wall(cx,cz,w,d){ const t=2,h=5.5,col=0xc2b280; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
+function wallGate(cx,cz,w,d){ const t=2,h=5.5,col=0xc2b280, gate=12; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col); }
 
-// TREES - 4FT MOTA TANA + GHANA PATTA
+// MAP - SAME AS BEFORE BUT WITH IMAGE LOOK
 for(let sx of [-140,140]) for(let sz of [-140,140]){
-  for(let i=0;i<7;i++){
-    const tx=sx+(Math.random()-0.5)*42, tz=sz+(Math.random()-0.5)*42;
-    box(tx,tz,4,8,4,0x3d2817,0.9);
-    const leaves=new THREE.Mesh(new THREE.SphereGeometry(6.8,8,7), new THREE.MeshStandardMaterial({color:0x1e6e1e, roughness:0.85}));
-    leaves.position.set(tx,12.5,tz); leaves.castShadow=true; scene.add(leaves);
-    const leaves2=new THREE.Mesh(new THREE.SphereGeometry(4.5,6,6), new THREE.MeshStandardMaterial({color:0x2a8a2a}));
-    leaves2.position.set(tx+1.5,11,tz+1); leaves2.castShadow=true; scene.add(leaves2);
+  for(let i=0;i<6;i++){
+    const tx=sx+(Math.random()-0.5)*40, tz=sz+(Math.random()-0.5)*40;
+    box(tx,tz,1.2,7,1.2,0x3d2817);
+    const lv=new THREE.Mesh(new THREE.SphereGeometry(5,6,6), new THREE.MeshStandardMaterial({color:0x2d7a2d, roughness:0.9}));
+    lv.position.set(tx,10,tz); lv.castShadow=true; scene.add(lv);
   }
 }
-
-// HOUSES - WOODEN BGMI STYLE
-function house(x,z){
-  box(x,z,16,8,13,0x5a4a3a,0.8);
-  const roof=new THREE.Mesh(new THREE.ConeGeometry(11,5,4), new THREE.MeshStandardMaterial({color:0x4a3a2a, roughness:0.7}));
-  roof.position.set(x,8+2.5,z); roof.rotation.y=Math.PI/4; roof.castShadow=true; scene.add(roof);
-}
-house(-48,130); house(50,130); house(-130,0); house(105,20); house(130,-50); house(-48,-145); house(18,-145);
-
-// RUIN WALLS - EXACT IMAGE
-wallWithGate(35,85,34,22); sandbagWall(-60,55,30,30); sandbagWall(-115,20,36,38);
-sandbagWall(-115,-30,36,44); sandbagWall(80,-40,36,36); sandbagWall(-30,-90,38,24);
+containerBox(-80,70); containerBox(-100,55); containerBox(40,60); containerBox(55,70);
+wallGate(35,85,34,22); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
 box(65,-5,1.5,5.5,50,0x8b7d6b); box(80,-50,36,5.5,1.5,0x8b7d6b); box(80,-20,36,5.5,1.5,0x8b7d6b); box(98,-40,1.5,5.5,36,0x8b7d6b);
-box(130,-65,30,5.5,1.5,0x8b7d6b); box(130,-55,1.5,5.5,12,0x8b7d6b); box(-30,-105,1.5,5.5,18,0x8b7d6b);
+bigBoulder(15,38); bigBoulder(-18,-2); bigBoulder(-48,-28); bigBoulder(8,-28); bigBoulder(70,0); bigBoulder(105,-10); bigBoulder(0,-50);
+[[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],16,5,7,0x4a2e1a));
+[[-60,108],[-35,108],[0,125],[-145,28],[10,90],[110,5],[80,-60],[0,-70],[50,-95],[70,70],[5,20],[20,-10]].forEach(p=> box(p[0],p[1],4,3,4,0x6b5a2e));
+[[-115,28],[-105,-28],[110,2],[50,-100],[0,-70],[80,-60]].forEach(p=> box(p[0],p[1],6,5,6,0x7a6a3e));
+// TYRES 5x3
+[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]].forEach(p=> box(p[0],p[1],3.2,5,3.2,0x151515));
+// WAREHOUSE BUILDINGS - LIKE IMAGE BACKGROUND
+function warehouse(x,z){ box(x,z,30,12,20,0x9a9a9a,0.8); box(x,z+1,28,2,18,0x6a6a6a); }
+warehouse(80,110); warehouse(-20,120); warehouse(120,-20);
 
-// ROCKS - REALISTIC BGMI BOULDERS
-function boulder(x,z,s){
-  const geo=new THREE.DodecahedronGeometry(s,0);
-  const m=new THREE.Mesh(geo, new THREE.MeshStandardMaterial({color:0x5a4d41, roughness:0.95}));
-  m.position.set(x,s*0.6,z); m.rotation.set(Math.random(),Math.random(),Math.random());
-  m.castShadow=true; m.receiveShadow=true; scene.add(m);
-}
-boulder(15,38,7); boulder(-18,-2,8); boulder(-48,-28,7.5); boulder(8,-28,6.5);
-[[75,65,3.5],[65,70,3],[ -60,5,3.2],[-5,-10,2.8],[10,-5,3],[ -45,-50,3.1],[55,60,2.9],[80,-30,3.3]].forEach(p=>boulder(p[0],p[1],p[2]));
-
-// CARS - RUSTED DESTROYED
-[[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=>{
-  box(p[0],p[1],16,5.5,7,0x4a2e1a,0.8);
-  box(p[0],p[1]+0.5,14,2.5,6,0x2e1a0e,0.9);
-});
-
-// CRATES - WOODEN
-[[-60,108],[-35,108],[0,125],[-145,28],[10,90],[110,5],[80,-60],[0,-70],[50,-95],[70,70],[5,20],[20,-10]].forEach(p=>box(p[0],p[1],4.2,3.2,4.2,0x8b6a2e));
-[[-115,28],[-105,-28],[110,2],[50,-100],[0,-70],[80,-60]].forEach(p=>box(p[0],p[1],6.5,5.5,6.5,0x9a7a3e));
-
-// TYRES - 5FT x 3FT COVER - BGMI BLACK
-const tyres=[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[70,0],[125,0],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]];
-tyres.forEach(p=>{
-  box(p[0],p[1],3.2,5,3.2,0x151515);
-  const t=new THREE.Mesh(new THREE.TorusGeometry(1.4,0.55,8,16), new THREE.MeshStandardMaterial({color:0x0a0a0a, roughness:0.9}));
-  t.position.set(p[0],4.6,p[1]); t.rotation.x=Math.PI/2; t.castShadow=true; scene.add(t);
-});
-
-// JOYSTICK - FIXED LOGIC
+// JOYSTICK + CAMERA FIXED - NO ATAK
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
-let joyTouchId=null, camTouchId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
-function getJoyCenter(){ const rc=joy.getBoundingClientRect(); return {x:rc.left+rc.width/2, y:rc.top+rc.height/2}; }
+let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
+function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
 document.addEventListener('touchstart', e=>{
   for(let t of e.changedTouches){
-    if(t.clientX < innerWidth*0.4 && joyTouchId===null){ joyTouchId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); }
-    else if(t.clientX > innerWidth*0.4 && camTouchId===null){ camTouchId=t.identifier; camLx=t.clientX; camLy=t.clientY; }
+    if(t.clientX < innerWidth*0.45 && joyId===null){ joyId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); }
+    else if(t.clientX >= innerWidth*0.45 && camId===null){ camId=t.identifier; camLx=t.clientX; camLy=t.clientY; }
   }
-  e.preventDefault();
 },{passive:false});
 document.addEventListener('touchmove', e=>{
   for(let t of e.touches){
-    if(t.identifier===joyTouchId) handleJoy(t);
-    if(t.identifier===camTouchId){ const dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.45; camPitch+=dy*0.7; camPitch=Math.max(-40,Math.min(65,camPitch)); camLx=t.clientX; camLy=t.clientY; }
+    if(t.identifier===joyId) handleJoy(t);
+    if(t.identifier===camId){ let dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.5; camPitch+=dy*0.6; camPitch=Math.max(-35,Math.min(55,camPitch)); camLx=t.clientX; camLy=t.clientY; }
   }
-  e.preventDefault();
 },{passive:false});
 document.addEventListener('touchend', e=>{
   for(let t of e.changedTouches){
-    if(t.identifier===joyTouchId){ joyTouchId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
-    if(t.identifier===camTouchId) camTouchId=null;
+    if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
+    if(t.identifier===camId) camId=null;
   }
-  e.preventDefault();
 },{passive:false});
-
+document.addEventListener('touchcancel', e=>{
+  for(let t of e.changedTouches){
+    if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
+    if(t.identifier===camId) camId=null;
+  }
+},{passive:false});
 function handleJoy(t){
   let dx=t.clientX-joyCx, dy=t.clientY-joyCy, dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  if(dist < 0.5){ moveX=0; moveZ=0; return; }
+  if(dist<0.5){ moveX=0; moveZ=0; return; }
   let nx=dx/dist, ny=dy/dist;
-  if(dist>=max*0.85){ moveX=nx; moveZ=-ny; } // BAHAR = FIXED
-  else { let f=(dist/max)*0.55; moveX=nx*f; moveZ=-ny*f; } // ANDAR = SLOW
+  if(dist>=max*0.85){ moveX=nx; moveZ=-ny; } else { let f=(dist/max)*0.55; moveX=nx*f; moveZ=-ny*f; }
 }
-
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
-  if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.6; legs.scale.y=1; curSpeed=SPEEDS.stand; }
-  if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; curSpeed=SPEEDS.crouch; }
-  if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; curSpeed=SPEEDS.prone; }
+  if(s==='stand'){ charGroup.scale.y=1; body.position.y=2.5; head.position.y=4.2; curSpeed=SPEEDS.stand; }
+  if(s==='crouch'){ charGroup.scale.y=0.65; body.position.y=1.6; head.position.y=2.9; curSpeed=SPEEDS.crouch; }
+  if(s==='prone'){ charGroup.scale.y=0.3; body.position.y=0.6; head.position.y=1.1; curSpeed=SPEEDS.prone; }
 }
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
 crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
 proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone');},{passive:false});
-
 function animate(){
   requestAnimationFrame(animate);
-  camYaw+=(targetYaw-camYaw)*0.13;
+  camYaw+=(targetYaw-camYaw)*0.18;
   if(moveX!==0||moveZ!==0){
     const rad=THREE.MathUtils.degToRad(camYaw);
     const finalX=-moveZ*Math.sin(rad)+moveX*Math.cos(rad);
@@ -207,14 +193,13 @@ function animate(){
     charGroup.rotation.y=Math.atan2(finalX,finalZ);
     const lim=MAP/2-4; charGroup.position.x=Math.max(-lim,Math.min(lim,charGroup.position.x)); charGroup.position.z=Math.max(-lim,Math.min(lim,charGroup.position.z));
   }
-  const dist=16, h=7 + (state==='crouch'?-2:state==='prone'?-4:0);
+  const dist=14, h=6 + (state==='crouch'?-2:state==='prone'?-3.5:0);
   const yawRad=THREE.MathUtils.degToRad(camYaw), pitchRad=THREE.MathUtils.degToRad(camPitch);
   camera.position.x=charGroup.position.x+Math.sin(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
-  camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.6+2;
+  camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.5+1.5;
   camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
-  let ms=(curSpeed/3.28084).toFixed(2);
-  document.getElementById('top').textContent=`${ms} m/s | ${state.toUpperCase()} | BGMI GRAPHICS ON`;
+  document.getElementById('top').textContent=`${(curSpeed/3.28084).toFixed(2)} m/s | ${state.toUpperCase()} LOCKED | BGMI ULTRA`;
   renderer.render(scene,camera);
 }
 animate();

@@ -18,7 +18,11 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
 #loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font:700 14px sans-serif;background:rgba(0,0,0,0.7);padding:12px 18px;border-radius:8px;z-index:100}
 </style>
 <script type="importmap">
-{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://threejs.org/examples/jsm/" } }
+{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/" } }
+</script>
+<!-- EMERGENCY HIDE - agar module crash bhi hua toh bhi loading hategi -->
+<script>
+setTimeout(function(){ var el=document.getElementById('loading'); if(el) el.style.display='none'; }, 1500);
 </script>
 </head>
 <body>
@@ -105,11 +109,9 @@ function onFinalFail(){
   soldierModel=g;
 }
 
-// FORCE HIDE - 2.5 sec me pakka loading hat jayega
 setTimeout(()=>{
   const el=document.getElementById('loading');
   if(el && el.style.display!=='none'){
-    console.log('Force hide');
     el.style.display='none';
     if(!soldierModel) onFinalFail();
   }

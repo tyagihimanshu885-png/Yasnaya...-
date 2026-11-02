@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>FINAL MAP 350x350 FT - BGMI SMOOTH</title>
+<title>FINAL MAP 350x350 FT - BGMI FINAL</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none}
 html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
@@ -19,7 +19,7 @@ html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
 <script type="importmap">{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/" } }</script>
 </head>
 <body>
-<div id="loading">FINAL MAP 350x350 FT<br><small>BGMI SMOOTH FIX</small></div>
+<div id="loading">FINAL MAP 350x350 FT<br><small>BGMI FINAL FIX</small></div>
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
 <div id="top">350x350 FT | STAND</div>
@@ -52,7 +52,6 @@ function makeGround(){
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({map:makeGround(), roughness:0.9}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
 
-// BGMI STYLE HIERARCHY - isse prone ulta nahi hoga
 const charGroup=new THREE.Group(); scene.add(charGroup); 
 const yawGroup=new THREE.Group(); 
 const pitchGroup=new THREE.Group();
@@ -61,22 +60,34 @@ yawGroup.add(pitchGroup);
 charGroup.position.set(0,0,0);
 
 let mixer=null, actions={}, activeAction=null, soldierModel=null;
-// SMOOTH TARGETS
-let targetScale=1.5, curScale=1.5;
-let targetPitchX=0, curPitchX=0;
-let targetPosY=0, curPosY=0;
+// SMOOTH TARGETS - BGMI STYLE
+let curScaleY=1.5, targetScaleY=1.5;
+let curPitchX=0, targetPitchX=0;
+let curModelY=Math.PI, targetModelY=Math.PI;
+let curPosY=0, targetPosY=0;
 
 const loader=new GLTFLoader();
-function playAnim(n){ if(!mixer||!actions[n]) return; if(activeAction===actions[n]) return; if(activeAction) activeAction.fadeOut(0.2); activeAction=actions[n]; activeAction.reset().fadeIn(0.2).play(); }
+function playAnim(n){
+  if(!mixer||!actions[n]) return;
+  if(activeAction===actions[n]) return;
+  if(activeAction) activeAction.fadeOut(0.25);
+  activeAction=actions[n];
+  activeAction.reset().fadeIn(0.25).play();
+}
 function onLoad(gltf){
   const m=gltf.scene; m.traverse(o=>{if(o.isMesh){o.castShadow=true; o.receiveShadow=true;}}); 
-  m.rotation.y=Math.PI; // Hamesha aage dekhega
+  m.rotation.y=Math.PI;
   m.scale.set(1.5,1.5,1.5);
   soldierModel=m; pitchGroup.add(m); mixer=new THREE.AnimationMixer(m);
   gltf.animations.forEach(c=>{actions[c.name.toLowerCase()]=mixer.clipAction(c);});
-  if(actions['idle']) playAnim('idle'); document.getElementById('loading').style.display='none';
+  if(actions['idle']) playAnim('idle');
+  document.getElementById('loading').style.display='none';
 }
-function onFail(){ document.getElementById('loading').style.display='none'; const b=new THREE.Mesh(new THREE.CapsuleGeometry(0.35,1,4,8), new THREE.MeshStandardMaterial({color:0x2A5A1A})); b.position.y=0.9; b.castShadow=true; const g=new THREE.Group(); g.add(b); g.rotation.y=Math.PI; pitchGroup.add(g); soldierModel=g; }
+function onFail(){
+  document.getElementById('loading').style.display='none';
+  const b=new THREE.Mesh(new THREE.CapsuleGeometry(0.35,1,4,8), new THREE.MeshStandardMaterial({color:0x2A5A1A}));
+  b.position.y=0.9; b.castShadow=true; const g=new THREE.Group(); g.add(b); g.rotation.y=Math.PI; pitchGroup.add(g); soldierModel=g;
+}
 loader.load('models/Soldier.glb', onLoad, undefined, ()=>loader.load('./models/Soldier.glb', onLoad, undefined, ()=>loader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onLoad, undefined, onFail)));
 
 function box(x,z,w,h,d,c){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c, roughness:0.8})); m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m; }
@@ -107,51 +118,54 @@ let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
 document.addEventListener('touchstart', e=>{ for(let t of e.changedTouches){ if(t.clientX < innerWidth*0.5 && joyId===null){ joyId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); } else if(t.clientX >= innerWidth*0.5 && camId===null){ camId=t.identifier; camLx=t.clientX; camLy=t.clientY; } } },{passive:false});
 document.addEventListener('touchmove', e=>{ for(let t of e.touches){ if(t.identifier===joyId) handleJoy(t); if(t.identifier===camId){ let dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.4; camPitch-=dy*0.4; camPitch=Math.max(-10,Math.min(30,camPitch)); camLx=t.clientX; camLy=t.clientY; } } e.preventDefault(); },{passive:false});
-document.addEventListener('touchend', e=>{ for(let t of e.changedTouches){ if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; isMoving=false; knob.style.transform='translate(-50%,-50%)'; } if(t.identifier===camId) camId=null; } },{passive:false});
+document.addEventListener('touchend', e=>{ for(let t of e.changedTouches){ if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; if(isMoving){ isMoving=false; if(state!=='prone' && actions['idle']) playAnim('idle'); } knob.style.transform='translate(-50%,-50%)'; } if(t.identifier===camId) camId=null; } },{passive:false});
 function handleJoy(t){
   let dx=t.clientX-joyCx, dy=t.clientY-joyCy, dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-  if(dist<8){ moveX=0; moveZ=0; isMoving=false; return; }
-  isMoving=true; moveX=dx/max; moveZ=dy/max;
+  if(dist<8){ if(isMoving){ isMoving=false; if(state!=='prone' && actions['idle']) playAnim('idle'); } moveX=0; moveZ=0; return; }
+  if(!isMoving){ isMoving=true; if(state!=='prone' && actions['run']) playAnim('run'); }
+  moveX=dx/max; moveZ=dy/max;
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){
+  if(state===s) return;
   state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
   if(!soldierModel) return;
-  // BGMI TARGETS - CAMERA SAME RAHEGA
   if(s==='stand'){ 
     curSpeed=SPEEDS.stand; 
-    targetScale=1.5; targetPosY=0; targetPitchX=0;
-    if(activeAction!==actions['idle']) playAnim('idle');
+    targetScaleY=1.5; targetPosY=0; targetPitchX=0; targetModelY=Math.PI;
+    if(actions['idle']) playAnim('idle');
   }
   if(s==='crouch'){ 
     curSpeed=SPEEDS.crouch; 
-    targetScale=0.9; targetPosY=-0.25; targetPitchX=0;
-    if(activeAction!==actions['idle']) playAnim('idle');
+    targetScaleY=0.95; targetPosY=-0.15; targetPitchX=0; targetModelY=Math.PI;
+    if(actions['idle']) playAnim('idle');
   }
   if(s==='prone'){ 
     curSpeed=SPEEDS.prone; 
-    targetScale=1.5; targetPosY=0.15; targetPitchX=Math.PI/2; // +90 = sidha, -90 = ulta tha
-    if(mixer){ activeAction=null; }
+    targetScaleY=1.5; targetPosY=0.15; targetPitchX=Math.PI/2; targetModelY=0; // 0 = sidha, PI = ulta
+    if(mixer){ if(activeAction) activeAction.fadeOut(0.2); activeAction=null; }
   }
 }
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
 crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
 proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone');},{passive:false});
+
 const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
   const delta=clock.getDelta(); if(mixer && state!=='prone') mixer.update(delta);
-  if(state!=='prone' && isMoving){ if(actions['run']) playAnim('run'); } else if(state!=='prone'){ if(actions['idle']) playAnim('idle'); }
-  // SMOOTH LERP - BGMI JAISE
-  curScale += (targetScale - curScale)*0.12;
-  curPosY += (targetPosY - curPosY)*0.12;
-  curPitchX += (targetPitchX - curPitchX)*0.12;
+  // BGMI SMOOTH - 0.1 se ekdum smooth
+  curScaleY += (targetScaleY - curScaleY)*0.10;
+  curPosY += (targetPosY - curPosY)*0.10;
+  curPitchX += (targetPitchX - curPitchX)*0.10;
+  curModelY += (targetModelY - curModelY)*0.10;
   if(soldierModel){
-    soldierModel.scale.y = curScale;
+    soldierModel.scale.y = curScaleY;
     pitchGroup.position.y = curPosY;
     pitchGroup.rotation.x = curPitchX;
+    soldierModel.rotation.y = curModelY;
   }
   camYaw+=(targetYaw-camYaw)*0.15;
   if(moveX!==0||moveZ!==0){
@@ -163,14 +177,14 @@ function animate(){
     if(finalX!==0||finalZ!==0) yawGroup.rotation.y=Math.atan2(finalX,finalZ);
     const lim=MAP/2-3; charGroup.position.x=Math.max(-lim,Math.min(lim,charGroup.position.x)); charGroup.position.z=Math.max(-lim,Math.min(lim,charGroup.position.z));
   }
-  // CAMERA FIXED - same distance for all
+  // CAMERA LOCKED - BGMI style same distance
   const camDist=11, camH=6.5;
   const yawRad=THREE.MathUtils.degToRad(camYaw), pitchRad=THREE.MathUtils.degToRad(camPitch);
   camera.position.x=charGroup.position.x+Math.sin(yawRad)*Math.cos(pitchRad)*camDist;
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*camDist;
-  camera.position.y=charGroup.position.y+camH+Math.sin(pitchRad)*camDist*0.3;
-  camera.lookAt(charGroup.position.x, charGroup.position.y+0.8, charGroup.position.z);
-  document.getElementById('top').textContent=`FINAL 350x350 FT | ${state.toUpperCase()} | ${isMoving?'RUN':'IDLE'}`;
+  camera.position.y=charGroup.position.y+camH+Math.sin(pitchRad)*2;
+  camera.lookAt(charGroup.position.x, charGroup.position.y+0.9, charGroup.position.z);
+  document.getElementById('top').textContent=`FINAL 350x350 FT | ${state.toUpperCase()}`;
   renderer.render(scene,camera);
 }
 animate();

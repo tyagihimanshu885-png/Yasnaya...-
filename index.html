@@ -94,17 +94,26 @@ function onModelLoaded(gltf){
   mixer=new THREE.AnimationMixer(model);
   gltf.animations.forEach(clip=>{ actions[clip.name.toLowerCase()]=mixer.clipAction(clip); });
   if(actions['idle']) actions['idle'].play();
-  document.getElementById('loading').style.display='none';
+  const l=document.getElementById('loading'); if(l) l.style.display='none';
 }
 function onFinalFail(){
-  document.getElementById('loading').style.display='none';
-  const dummy = new THREE.Group();
+  const l=document.getElementById('loading'); if(l) l.style.display='none';
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8), new THREE.MeshStandardMaterial({color:0x1a5a1a}));
   body.position.y=1.1; body.castShadow=true;
-  dummy.add(body);
-  charGroup.add(dummy);
-  soldierModel = dummy;
+  const g=new THREE.Group(); g.add(body);
+  charGroup.add(g);
+  soldierModel=g;
 }
+
+// --- EMERGENCY FIX: 3 sec me loading hat jayega chahe kuch bhi ho ---
+setTimeout(()=>{
+  const l=document.getElementById('loading');
+  if(l && l.style.display!=='none'){
+    console.log('Force hide loading - net slow');
+    l.style.display='none';
+    if(!soldierModel) onFinalFail();
+  }
+}, 3000);
 
 gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{
   gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{

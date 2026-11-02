@@ -94,10 +94,10 @@ function onModelLoaded(gltf){
   mixer=new THREE.AnimationMixer(model);
   gltf.animations.forEach(clip=>{ actions[clip.name.toLowerCase()]=mixer.clipAction(clip); });
   if(actions['idle']) actions['idle'].play();
-  const l=document.getElementById('loading'); if(l) l.style.display='none';
+  document.getElementById('loading').style.display='none';
 }
 function onFinalFail(){
-  const l=document.getElementById('loading'); if(l) l.style.display='none';
+  document.getElementById('loading').style.display='none';
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8), new THREE.MeshStandardMaterial({color:0x1a5a1a}));
   body.position.y=1.1; body.castShadow=true;
   const g=new THREE.Group(); g.add(body);
@@ -105,15 +105,15 @@ function onFinalFail(){
   soldierModel=g;
 }
 
-// --- EMERGENCY FIX: 3 sec me loading hat jayega chahe kuch bhi ho ---
+// FORCE HIDE - 2.5 sec me pakka loading hat jayega
 setTimeout(()=>{
-  const l=document.getElementById('loading');
-  if(l && l.style.display!=='none'){
-    console.log('Force hide loading - net slow');
-    l.style.display='none';
+  const el=document.getElementById('loading');
+  if(el && el.style.display!=='none'){
+    console.log('Force hide');
+    el.style.display='none';
     if(!soldierModel) onFinalFail();
   }
-}, 3000);
+}, 2500);
 
 gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{
   gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{

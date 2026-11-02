@@ -3,160 +3,153 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>TDM - REAL BGMI CHARACTER</title>
+<title>PUBG Lite - TDM</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;touch-action:none;user-select:none}
 html,body{width:100%;height:100%;background:#000;overflow:hidden;position:fixed}
 #game{position:fixed;left:0;top:0;width:100vw;height:100vh}
 #joy{position:fixed;left:5vw;bottom:10vh;width:32vw;max-width:135px;height:32vw;max-height:135px;border:2px solid #fff;border-radius:50%;background:rgba(255,255,255,0.15);z-index:10}
 #knob{position:absolute;left:50%;top:50%;width:44%;height:44%;background:#fff;border-radius:50%;transform:translate(-50%,-50%)}
-#cam{position:fixed;right:0;top:0;width:60vw;height:100vh;z-index:5}
-#top{position:fixed;top:0;left:0;right:0;background:rgba(0,0,0,0.55);color:#00ff88;padding:6px 10px;font:700 12px monospace;z-index:20}
+#top{position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg, rgba(0,0,0,0.8), rgba(0,0,0,0.3));color:#FFD700;padding:8px 12px;font:700 13px monospace;z-index:20;border-bottom:1px solid #FFD700}
 #btns{position:fixed;right:3vw;bottom:10vh;display:flex;gap:2.5vw;z-index:10}
-.b{width:18vw;max-width:70px;height:18vw;max-height:70px;border-radius:50%;border:2px solid #fff;background:rgba(0,0,0,0.6);color:#fff;font:700 10px sans-serif}
-.b.active{background:#00aaff;box-shadow:0 0 12px #00aaff}
-#loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);color:#fff;font:700 14px sans-serif;background:rgba(0,0,0,0.7);padding:12px 18px;border-radius:8px;z-index:100}
+.b{width:18vw;max-width:70px;height:18vw;max-height:70px;border-radius:50%;border:2px solid #FFD700;background:rgba(0,0,0,0.7);color:#fff;font:700 10px sans-serif;box-shadow:0 0 10px rgba(255,215,0,0.3)}
+.b.active{background:#FFD700;color:#000;box-shadow:0 0 15px #FFD700}
+#loading{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);color:#FFD700;font:800 16px sans-serif;background:rgba(0,0,0,0.85);padding:16px 24px;border-radius:10px;z-index:100;border:2px solid #FFD700;text-align:center}
 </style>
-<script type="importmap">
-{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/" } }
-</script>
-<script>setTimeout(function(){var e=document.getElementById('loading');if(e)e.style.display='none';},1200);</script>
+<script type="importmap">{ "imports": { "three": "https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.128.0/examples/jsm/" } }</script>
+<script>setTimeout(()=>{let e=document.getElementById('loading');if(e)e.style.display='none';},1500);</script>
 </head>
 <body>
-<div id="loading">LOADING BGMI CHARACTER...</div>
+<div id="loading">PUBG LITE LOADING...<br><small style="font-size:11px;color:#fff">Erangel Map</small></div>
 <canvas id="game"></canvas>
 <div id="joy"><div id="knob"></div></div>
-<div id="cam"></div>
-<div id="top">STAND</div>
-<div id="btns">
-<button class="b active" id="stand">STANDING</button>
-<button class="b" id="crouch">CROUCH</button>
-<button class="b" id="prone">PRONE</button>
-</div>
+<div id="top">PUBG LITE | STAND</div>
+<div id="btns"><button class="b active" id="stand">STAND</button><button class="b" id="crouch">CROUCH</button><button class="b" id="prone">PRONE</button></div>
 <script type="module">
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
-const MAP=350;
-const SPEEDS={ stand:6.5, crouch:2.8, prone:1.5 };
+const MAP=400, SPEEDS={stand:6.5,crouch:2.8,prone:1.5};
 let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=12;
 const canvas=document.getElementById('game');
 const scene=new THREE.Scene();
-scene.background=new THREE.Color(0x87ceeb);
-scene.fog=new THREE.Fog(0x9ac07a, 90, 320);
+scene.background=new THREE.Color(0x87CEEB);
+scene.fog=new THREE.Fog(0xC8E6C9, 80, 350);
 const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 800);
-const renderer=new THREE.WebGLRenderer({canvas, antialias:true});
-renderer.setSize(innerWidth, innerHeight);
+const renderer=new THREE.WebGLRenderer({canvas, antialias:true, powerPreference:"high-performance"});
+renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,1.5));
 renderer.shadowMap.enabled=true;
+renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 renderer.outputEncoding=THREE.sRGBEncoding;
-scene.add(new THREE.HemisphereLight(0xffffff, 0x3a5f2a, 0.85));
-scene.add(new THREE.AmbientLight(0xffffff,0.45));
-const sun=new THREE.DirectionalLight(0xfff6e0,0.9);
-sun.position.set(120,160,90); sun.castShadow=true; sun.shadow.mapSize.set(2048,2048);
+renderer.toneMapping=THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure=1.1;
+
+// PUBG LITE LIGHTING
+scene.add(new THREE.HemisphereLight(0xB0D8FF, 0x4A6A2A, 0.7));
+scene.add(new THREE.AmbientLight(0xffffff,0.35));
+const sun=new THREE.DirectionalLight(0xFFF8E0, 1.1);
+sun.position.set(150,220,120); sun.castShadow=true;
+sun.shadow.mapSize.set(2048,2048);
+sun.shadow.camera.left=-180; sun.shadow.camera.right=180; sun.shadow.camera.top=180; sun.shadow.camera.bottom=-180;
+sun.shadow.bias=-0.0003;
 scene.add(sun);
-function makeGround(){
+const fillLight=new THREE.DirectionalLight(0xFFFFFF,0.25);
+fillLight.position.set(-80,60,-80);
+scene.add(fillLight);
+
+function createPUBGGround(){
   const c=document.createElement('canvas'); c.width=c.height=1024;
   const ctx=c.getContext('2d');
-  ctx.fillStyle='#4a7a32'; ctx.fillRect(0,0,1024,1024);
-  ctx.fillStyle='#8a7a5a'; ctx.fillRect(470,0,90,1024); ctx.fillRect(0,480,1024,70);
-  for(let i=0;i<20000;i++){
-    let x=Math.random()*1024, y=Math.random()*1024;
-    if((x>470&&x<560)||(y>480&&y<550)) continue;
-    ctx.fillStyle=Math.random()>0.5?'#3e6b2a':'#5a8a3a';
-    ctx.fillRect(x,y,2,3);
+  ctx.fillStyle='#5E8F3E'; ctx.fillRect(0,0,1024,1024);
+  for(let i=0;i<35000;i++){
+    const x=Math.random()*1024, y=Math.random()*1024;
+    ctx.fillStyle=Math.random()>0.6 ? '#4A7A32' : Math.random()>0.5 ? '#6FA84E' : '#3D5A2A';
+    ctx.fillRect(x,y,2,2);
   }
-  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(4,4); t.encoding=THREE.sRGBEncoding; return t;
+  ctx.fillStyle='#8C7A5B'; ctx.fillRect(460,0,100,1024); ctx.fillRect(0,460,1024,100);
+  ctx.fillStyle='#7A6A4B'; ctx.fillRect(475,0,70,1024); ctx.fillRect(0,475,1024,70);
+  ctx.strokeStyle='#6A5A3B'; ctx.lineWidth=2;
+  ctx.strokeRect(475,0,70,1024); ctx.strokeRect(0,475,1024,70);
+  const t=new THREE.CanvasTexture(c); t.wrapS=t.wrapT=THREE.RepeatWrapping; t.repeat.set(3,3); t.encoding=THREE.sRGBEncoding; return t;
 }
-const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({ map:makeGround(), roughness:0.95 }));
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshStandardMaterial({map:createPUBGGround(), roughness:0.9, metalness:0.05}));
 ground.rotation.x=-Math.PI/2; ground.receiveShadow=true; scene.add(ground);
-const charGroup=new THREE.Group();
-scene.add(charGroup);
-charGroup.position.set(-140,0,140);
+
+const charGroup=new THREE.Group(); scene.add(charGroup); charGroup.position.set(-140,0,140);
 let mixer=null, actions={}, soldierModel=null;
 const gltfLoader=new GLTFLoader();
 function onModelLoaded(gltf){
-  const model=gltf.scene;
-  model.traverse(o=>{ if(o.isMesh){ o.castShadow=true; o.receiveShadow=true; }});
-  model.scale.set(1.8,1.8,1.8);
-  soldierModel=model;
-  charGroup.add(model);
+  const model=gltf.scene; model.traverse(o=>{if(o.isMesh){o.castShadow=true; o.receiveShadow=true;}});
+  model.scale.set(1.8,1.8,1.8); soldierModel=model; charGroup.add(model);
   mixer=new THREE.AnimationMixer(model);
-  gltf.animations.forEach(clip=>{ actions[clip.name.toLowerCase()]=mixer.clipAction(clip); });
+  gltf.animations.forEach(clip=>{actions[clip.name.toLowerCase()]=mixer.clipAction(clip);});
   if(actions['idle']) actions['idle'].play();
   document.getElementById('loading').style.display='none';
 }
 function onFinalFail(){
   document.getElementById('loading').style.display='none';
-  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8), new THREE.MeshStandardMaterial({color:0x1a5a1a}));
-  body.position.y=1.1; body.castShadow=true;
-  const g=new THREE.Group(); g.add(body);
-  charGroup.add(g);
-  soldierModel=g;
+  const body=new THREE.Mesh(new THREE.CapsuleGeometry(0.4,1.2,4,8), new THREE.MeshStandardMaterial({color:0x2A5A1A}));
+  body.position.y=1.1; body.castShadow=true; const g=new THREE.Group(); g.add(body); charGroup.add(g); soldierModel=g;
 }
-setTimeout(()=>{ const el=document.getElementById('loading'); if(el && el.style.display!=='none'){ el.style.display='none'; if(!soldierModel) onFinalFail(); } }, 2500);
+setTimeout(()=>{ const el=document.getElementById('loading'); if(el && el.style.display!=='none'){ el.style.display='none'; if(!soldierModel) onFinalFail(); } },3000);
 gltfLoader.load('models/Soldier.glb', onModelLoaded, undefined, ()=>{ gltfLoader.load('./models/Soldier.glb', onModelLoaded, undefined, ()=>{ gltfLoader.load('https://threejs.org/examples/models/gltf/Soldier.glb', onModelLoaded, undefined, onFinalFail); }); });
-function box(x,z,w,h,d,c){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshStandardMaterial({color:c})); m.position.set(x,h/2,z); m.castShadow=true; m.receiveShadow=true; scene.add(m); return m; }
-function wall(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5; box(cx-w/2,cz,t,h,d,c); box(cx+w/2,cz,t,h,d,c); box(cx,cz-d/2,w,h,t,c); box(cx,cz+d/2,w,h,t,c); }
-function wallGate(cx,cz,w,d){ const c=0xd2c4a0,t=2,h=5.5,gate=12; box(cx-w/2,cz,t,h,d,c); box(cx+w/2,cz,t,h,d,c); box(cx,cz-d/2,w,h,t,c); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,c); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,c); }
-wallGate(35,85,34,22); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
+
+// PUBG BUILDINGS
+function pubgCompound(x,z,w,d){
+  const group=new THREE.Group();
+  const wallMat=new THREE.MeshStandardMaterial({color:0xE8D9A0, roughness:0.85});
+  const roofMat=new THREE.MeshStandardMaterial({color:0x3A6EA5, roughness:0.6});
+  const base=new THREE.Mesh(new THREE.BoxGeometry(w,6,d), wallMat); base.position.set(x,3,z); base.castShadow=true; base.receiveShadow=true; group.add(base);
+  const roof=new THREE.Mesh(new THREE.BoxGeometry(w+0.6,0.5,d+0.6), roofMat); roof.position.set(x,6.25,z); roof.castShadow=true; group.add(roof);
+  const winMat=new THREE.MeshStandardMaterial({color:0x1A1A1A});
+  for(let i=0;i<2;i++){ const win=new THREE.Mesh(new THREE.BoxGeometry(1.8,1.4,0.3), winMat); win.position.set(x+w/2+0.15, 3.5, z-3+i*6); group.add(win); }
+  const door=new THREE.Mesh(new THREE.BoxGeometry(2,3.5,0.3), new THREE.MeshStandardMaterial({color:0x4A3020})); door.position.set(x,1.75,z+d/2+0.15); group.add(door);
+  scene.add(group);
+}
+function tree(x,z){
+  const trunk=new THREE.Mesh(new THREE.CylinderGeometry(0.3,0.5,4,6), new THREE.MeshStandardMaterial({color:0x5A3A1A}));
+  trunk.position.set(x,2,z); trunk.castShadow=true; scene.add(trunk);
+  const leaves=new THREE.Mesh(new THREE.ConeGeometry(3,6,8), new THREE.MeshStandardMaterial({color:0x2A6A2A}));
+  leaves.position.set(x,6,z); leaves.castShadow=true; scene.add(leaves);
+}
+function crate(x,z){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(2,2,2), new THREE.MeshStandardMaterial({color:0x8B5A2B, roughness:0.9}));
+  m.position.set(x,1,z); m.castShadow=true; m.receiveShadow=true; scene.add(m);
+}
+function smallWall(x,z,w,d){
+  const m=new THREE.Mesh(new THREE.BoxGeometry(w,2.5,d), new THREE.MeshStandardMaterial({color:0xC9B896}));
+  m.position.set(x,1.25,z); m.castShadow=true; m.receiveShadow=true; scene.add(m);
+}
+
+// MAP LAYOUT - PUBG LITE STYLE
+pubgCompound(40,80,28,20); pubgCompound(-60,50,24,24); pubgCompound(-115,15,30,32); pubgCompound(-110,-35,32,28);
+pubgCompound(85,-45,30,30); pubgCompound(-25,-95,34,22); pubgCompound(120,30,22,22); pubgCompound(0,-10,20,20);
+smallWall(-70,90,20,2); smallWall(-90,90,2,15); smallWall(10,110,30,2); smallWall(100,80,2,20);
+[[ -130,100],[-120,110],[110,110],[125,95],[-100,-110],[-85,-120],[90,-110],[110,-90],[0,130],[-40,0],[60,-20]].forEach(p=>tree(p[0],p[1]));
+[[ -80,70],[-20,60],[50,40],[ -30,-40],[70,-70],[-110,-80]].forEach(p=>crate(p[0],p[1]));
+
+// CONTROLS - FIXED
 const joy=document.getElementById('joy'), knob=document.getElementById('knob');
 let joyId=null, camId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
 function getJoyCenter(){ const r=joy.getBoundingClientRect(); return {x:r.left+r.width/2, y:r.top+r.height/2}; }
-document.addEventListener('touchstart', e=>{
-  for(let t of e.changedTouches){
-    if(t.clientX < innerWidth*0.45 && joyId===null){ joyId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); }
-    else if(t.clientX >= innerWidth*0.45 && camId===null){ camId=t.identifier; camLx=t.clientX; camLy=t.clientY; }
-  }
-},{passive:false});
-document.addEventListener('touchmove', e=>{
-  for(let t of e.touches){
-    if(t.identifier===joyId) handleJoy(t);
-    if(t.identifier===camId){ let dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.35; camPitch-=dy*0.35; camPitch=Math.max(-20,Math.min(45,camPitch)); camLx=t.clientX; camLy=t.clientY; }
-  }
-  e.preventDefault();
-},{passive:false});
-document.addEventListener('touchend', e=>{
-  for(let t of e.changedTouches){
-    if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
-    if(t.identifier===camId) camId=null;
-  }
-},{passive:false});
+document.addEventListener('touchstart', e=>{ for(let t of e.changedTouches){ if(t.clientX < innerWidth*0.45 && joyId===null){ joyId=t.identifier; const c=getJoyCenter(); joyCx=c.x; joyCy=c.y; handleJoy(t); } else if(t.clientX >= innerWidth*0.45 && camId===null){ camId=t.identifier; camLx=t.clientX; camLy=t.clientY; } } },{passive:false});
+document.addEventListener('touchmove', e=>{ for(let t of e.touches){ if(t.identifier===joyId) handleJoy(t); if(t.identifier===camId){ let dx=t.clientX-camLx, dy=t.clientY-camLy; targetYaw-=dx*0.35; camPitch-=dy*0.35; camPitch=Math.max(-20,Math.min(45,camPitch)); camLx=t.clientX; camLy=t.clientY; } } e.preventDefault(); },{passive:false});
+document.addEventListener('touchend', e=>{ for(let t of e.changedTouches){ if(t.identifier===joyId){ joyId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; } if(t.identifier===camId) camId=null; } },{passive:false});
 function handleJoy(t){
   let dx=t.clientX-joyCx, dy=t.clientY-joyCy, dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   if(dist<5){ moveX=0; moveZ=0; return; }
-  // --- YAHAN REVERSE FIX KIYA HAI ---
-  let nx=dx/max;
-  let nz=-dy/max; // pehle dy/max tha, ab -dy/max karke ulta kiya
-  moveX=nx; 
-  moveZ=nz;
+  moveX = dx/max;
+  moveZ = dy/max;
 }
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
 function setState(s){
   state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone');
-  if(soldierModel){ 
-    soldierModel.rotation.x=0; 
-    soldierModel.position.set(0,0,0);
-    soldierModel.scale.set(1.8,1.8,1.8);
-  }
+  if(soldierModel){ soldierModel.rotation.x=0; soldierModel.position.set(0,0,0); soldierModel.scale.set(1.8,1.8,1.8); }
   if(s==='stand'){ curSpeed=SPEEDS.stand; }
-  if(s==='crouch'){ 
-    curSpeed=SPEEDS.crouch; 
-    if(soldierModel){
-      // CROUCH FIX - ab chhota hoga, bada nahi
-      soldierModel.scale.set(1.8,0.95,1.8);
-      soldierModel.position.y=-0.6;
-    }
-  }
-  if(s==='prone'){ 
-    curSpeed=SPEEDS.prone; 
-    if(soldierModel){ 
-      soldierModel.rotation.x=-Math.PI/2; 
-      soldierModel.position.y=0.25; 
-      soldierModel.position.z=0.4; 
-    }
-  }
+  if(s==='crouch'){ curSpeed=SPEEDS.crouch; if(soldierModel){ soldierModel.scale.set(1.8,0.9,1.8); soldierModel.position.y=-0.6; } }
+  if(s==='prone'){ curSpeed=SPEEDS.prone; if(soldierModel){ soldierModel.rotation.x=-Math.PI/2; soldierModel.position.y=0.25; soldierModel.position.z=0.4; } }
 }
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand');},{passive:false});
 crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch');},{passive:false});
@@ -164,27 +157,24 @@ proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone'
 const clock=new THREE.Clock();
 function animate(){
   requestAnimationFrame(animate);
-  const delta=clock.getDelta();
-  if(mixer) mixer.update(delta);
+  const delta=clock.getDelta(); if(mixer) mixer.update(delta);
   camYaw+=(targetYaw-camYaw)*0.12;
   if(moveX!==0||moveZ!==0){
     const rad=THREE.MathUtils.degToRad(camYaw);
     const finalX = moveZ*Math.sin(rad) + moveX*Math.cos(rad);
     const finalZ = moveZ*Math.cos(rad) - moveX*Math.sin(rad);
-    // --- YAHAN BHI REVERSE FIX ---
     charGroup.position.x+=finalX*curSpeed*0.09;
     charGroup.position.z+=finalZ*curSpeed*0.09;
     if(finalX!==0||finalZ!==0) charGroup.rotation.y=Math.atan2(finalX,finalZ);
     const lim=MAP/2-4; charGroup.position.x=Math.max(-lim,Math.min(lim,charGroup.position.x)); charGroup.position.z=Math.max(-lim,Math.min(lim,charGroup.position.z));
   }
-  const h = state==='stand'?7.5 : state==='crouch'?4.5 : 1.8;
-  const dist = state==='stand'?12 : state==='crouch'?10 : 8;
+  const h = state==='stand'?7.5 : state==='crouch'?4.5 : 1.8; const dist = state==='stand'?12 : state==='crouch'?10 : 8;
   const yawRad=THREE.MathUtils.degToRad(camYaw), pitchRad=THREE.MathUtils.degToRad(camPitch);
   camera.position.x=charGroup.position.x+Math.sin(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.5;
   camera.lookAt(charGroup.position.x, charGroup.position.y+1.2, charGroup.position.z);
-  document.getElementById('top').textContent=`${state.toUpperCase()} | Speed ${curSpeed}`;
+  document.getElementById('top').textContent=`PUBG LITE | ${state.toUpperCase()} | Speed ${curSpeed}`;
   renderer.render(scene,camera);
 }
 animate();

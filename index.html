@@ -32,8 +32,14 @@ html,body{width:100%;height:100%;height:100dvh;background:#000;overflow:hidden;p
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
-const MAP=350, SPEEDS={stand:15.4,sprint:20.6,crouch:4.2,crouchSprint:15.7,prone:3.9};
-let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=20, isSprint=false;
+// SPEED LOCK - NO SPRINT
+const MAP=350;
+const SPEEDS={
+  stand: 15.39, // 4.69 m/s
+  crouch: 4.26, // 1.30 m/s
+  prone: 3.28 // 1.0 m/s
+};
+let curSpeed=SPEEDS.stand, state='stand', moveX=0, moveZ=0, camYaw=0, targetYaw=0, camPitch=20;
 const canvas=document.getElementById('game');
 const scene=new THREE.Scene(); scene.background=new THREE.Color(0x4a8a2e);
 const camera=new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 1000);
@@ -44,14 +50,11 @@ scene.add(new THREE.AmbientLight(0xffffff,0.9));
 const sun=new THREE.DirectionalLight(0xffffff,0.7); sun.position.set(60,120,60); scene.add(sun);
 const ground=new THREE.Mesh(new THREE.PlaneGeometry(MAP,MAP), new THREE.MeshLambertMaterial({color:0x4a8a2e}));
 ground.rotation.x=-Math.PI/2; scene.add(ground);
-
-// CHARACTER 6 FT BLUE
 const charGroup=new THREE.Group();
 const body=new THREE.Mesh(new THREE.BoxGeometry(1.4,3,0.9), new THREE.MeshLambertMaterial({color:0x0088ff})); body.position.y=2.6; charGroup.add(body);
 const head=new THREE.Mesh(new THREE.BoxGeometry(0.9,0.9,0.9), new THREE.MeshLambertMaterial({color:0xffdbac})); head.position.y=4.7; charGroup.add(head);
 const legs=new THREE.Mesh(new THREE.BoxGeometry(1.2,1.8,0.9), new THREE.MeshLambertMaterial({color:0x0033aa})); legs.position.y=0.9; charGroup.add(legs);
 charGroup.position.set(-140,0,140); scene.add(charGroup);
-
 function box(x,z,w,h,d,c){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), new THREE.MeshLambertMaterial({color:c})); m.position.set(x,h/2,z); scene.add(m); return m; }
 function wall(cx,cz,w,d){ const t=1.5,h=5,col=0x8b7d6b; box(cx-w/2,cz,t,h,d,col); box(cx+w/2,cz,t,h,d,col); box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
 function wallWithGate(cx,cz,w,d,gateSide='bottom'){
@@ -60,73 +63,32 @@ function wallWithGate(cx,cz,w,d,gateSide='bottom'){
   if(gateSide==='bottom'){ box(cx,cz-d/2,w,h,t,col); box(cx-(w/2-gate/2)/2 - gate/4,cz+d/2,(w-gate)/2,h,t,col); box(cx+(w/2-gate/2)/2 + gate/4,cz+d/2,(w-gate)/2,h,t,col); }
   else { box(cx,cz-d/2,w,h,t,col); box(cx,cz+d/2,w,h,t,col); }
 }
-
-// ===== EXACT MAP FROM YOUR IMAGE - 1:1 COPY =====
-// SPAWN CORNERS TREES (4 corners)
 for(let sx of [-140,140]) for(let sz of [-140,140]){
   for(let i=0;i<7;i++){ const tx=sx+(Math.random()-0.5)*40, tz=sz+(Math.random()-0.5)*40; const tr=box(tx,tz,1.2,7,1.2,0x3d2b1f); const lv=new THREE.Mesh(new THREE.SphereGeometry(5.5,6,6), new THREE.MeshLambertMaterial({color:0x1a5a1a})); lv.position.set(tr.position.x,10,tr.position.z); scene.add(lv); }
 }
-
-// HOUSES - 7 exact as per image
-box(-48,130,15,10,12,0x5a4a3a); // Top small left
-box(50,130,18,12,14,0x5a4a3a); // Top small right
-box(-130,0,15,10,12,0x5a4a3a); // Left
-box(105,20,15,10,12,0x5a4a3a); // Right middle
-box(130,-50,18,12,14,0x5a4a3a); // Right bottom
-box(-48,-145,15,10,12,0x5a4a3a); // Bottom left
-box(18,-145,15,10,12,0x5a4a3a); // Bottom middle
-
-// RUIN WALLS - 8 walls exact image positions (Thickness 1.5FT Height 5FT Gate 12FT)
-wallWithGate(35,85,34,22,'bottom'); // Top right rectangle
-wall(-60,55,30,30); // Middle top with rocks inside
-wall(-115,20,36,38); // Middle left upper
-wall(-115,-30,36,44); // Middle left lower
-wall(80,-40,36,36); // Right middle lower
-wall(-30,-90,38,24); // Bottom center
-// L-SHAPES - C-Shape right side
+box(-48,130,15,10,12,0x5a4a3a); box(50,130,18,12,14,0x5a4a3a); box(-130,0,15,10,12,0x5a4a3a); box(105,20,15,10,12,0x5a4a3a); box(130,-50,18,12,14,0x5a4a3a); box(-48,-145,15,10,12,0x5a4a3a); box(18,-145,15,10,12,0x5a4a3a);
+wallWithGate(35,85,34,22,'bottom'); wall(-60,55,30,30); wall(-115,20,36,38); wall(-115,-30,36,44); wall(80,-40,36,36); wall(-30,-90,38,24);
 box(65,-5,1.5,5,50,0x8b7d6b); box(80,-50,36,5,1.5,0x8b7d6b); box(80,-20,36,5,1.5,0x8b7d6b); box(98,-40,1.5,5,36,0x8b7d6b);
-box(130,-65,30,5,1.5,0x8b7d6b); box(130,-55,1.5,5,12,0x8b7d6b); // Small bottom right L
-box(-30,-105,1.5,5,18,0x8b7d6b); // Bottom T leg
-
-// LARGE BOULDERS - 4 Large 12x10x8H - exact image
-box(15,38,12,8,10,0x4a3a2e);
-box(-18,-2,12,8,10,0x4a3a2e);
-box(-48,-28,12,8,10,0x4a3a2e);
-box(8,-28,12,8,10,0x4a3a2e);
-
-// MEDIUM BOULDERS - 8 Medium 6x5x4H
+box(130,-65,30,5,1.5,0x8b7d6b); box(130,-55,1.5,5,12,0x8b7d6b); box(-30,-105,1.5,5,18,0x8b7d6b);
+box(15,38,12,8,10,0x4a3a2e); box(-18,-2,12,8,10,0x4a3a2e); box(-48,-28,12,8,10,0x4a3a2e); box(8,-28,12,8,10,0x4a3a2e);
 const medRocks=[[75,65,6,4,5],[65,70,6,4,5],[-60,5,6,4,5],[-5,-10,6,4,5],[10,-5,6,4,5],[-45,-50,6,4,5],[55,60,6,4,5],[80,-30,6,4,5]];
 medRocks.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x5a5a5a));
-
-// SMALL BOULDERS - 10 Small 3x3x2.5H
 const smallRocks=[[55,30,3,2.5,3],[40,20,3,2.5,3],[55,5,3,2.5,3],[15,10,3,2.5,3],[-10,-30,3,2.5,3],[10,-50,3,2.5,3],[-35,-45,3,2.5,3],[20,-60,3,2.5,3],[60,-45,3,2.5,3],[65,-10,3,2.5,3]];
 smallRocks.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x6a6a6a));
-
-// CARS - 8 Cars 15x6x5H - 2 per corner as per image
 [[-115,110],[-125,95],[115,105],[130,88],[-110,-105],[-95,-125],[95,-115],[115,-95]].forEach(p=> box(p[0],p[1],15,5,6,0x3d2b1f));
-
-// CRATES - 12 Small 4x4x3H + 6 Large 6x6x5H - exact image spots
 const smallCrates=[[-60,108,4,3,4],[-35,108,4,3,4],[0,125,4,3,4],[-145,28,4,3,4],[10,90,4,3,4],[110,5,4,3,4],[80,-60,4,3,4],[0,-70,4,3,4],[50,-95,4,3,4],[70,70,4,3,4],[5,20,4,3,4],[20,-10,4,3,4]];
 const largeCrates=[[-115,28,6,5,6],[-105,-28,6,5,6],[110,2,6,5,6],[50,-100,6,5,6],[0,-70,6,5,6],[80,-60,6,5,6]];
 smallCrates.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x8b6a2e));
 largeCrates.forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x9a7a3e));
-
-// LOW WALLS - 8 Low Walls 8x1.5x3H - scattered
 [[45,-75,8,3,1.5],[65,-75,8,3,1.5],[65,-10,8,3,1.5],[120,10,8,3,1.5],[115,18,1.5,3,8],[130,-55,8,3,1.5],[-30,-105,8,3,1.5],[-30,-85,8,3,1.5]].forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0x777777));
-
-// PLANKS - 10 Planks 8x1x0.5H
 [[-95,55,8,0.5,1],[ -140,5,8,0.5,1],[-130,-20,8,0.5,1],[-65,-15,8,0.5,1],[-15,-35,8,0.5,1],[40,-5,8,0.5,1],[70,35,8,0.5,1],[120,5,8,0.5,1],[95,-105,8,0.5,1],[10,-125,8,0.5,1]].forEach(p=> box(p[0],p[1],p[2],p[3],p[4],0xc2a67a));
-
-// TYRES - 30 Tyres 2.5x2.5x2H - exact image positions
 const tyres=[[-75,105],[-55,85],[-105,45],[35,65],[55,85],[45,55],[-35,55],[-20,65],[-40,20],[-40,15],[-75,15],[-85,5],[-55,-15],[-15,-10],[20,-10],[40,-20],[0,-45],[0,-60],[30,-60],[15,-115],[35,-105],[70,0],[125,0],[105,-10],[115,-25],[120,-30],[30,-85],[30,-80],[20,85],[20,90]];
 tyres.forEach(p=>{ const t=new THREE.Mesh(new THREE.TorusGeometry(1.2,0.4,6,12), new THREE.MeshLambertMaterial({color:0x111111})); t.position.set(p[0],0.6,p[1]); t.rotation.x=Math.PI/2; scene.add(t); });
 
-// ===== BGMI MULTI-TOUCH - JOYSTICK + CAMERA EK SAATH =====
+// MULTI-TOUCH BGMI
 const joy=document.getElementById('joy'), knob=document.getElementById('knob'), camArea=document.getElementById('cam');
 let joyTouchId=null, camTouchId=null, joyCx=0, joyCy=0, camLx=0, camLy=0;
-
 function getJoyCenter(){ const rc=joy.getBoundingClientRect(); return {x:rc.left+rc.width/2, y:rc.top+rc.height/2}; }
-
 document.addEventListener('touchstart', e=>{
   for(let t of e.changedTouches){
     if(t.clientX < window.innerWidth*0.4 && joyTouchId===null){
@@ -137,7 +99,6 @@ document.addEventListener('touchstart', e=>{
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
-
 document.addEventListener('touchmove', e=>{
   for(let t of e.touches){
     if(t.identifier===joyTouchId){ handleJoy(t); }
@@ -149,31 +110,25 @@ document.addEventListener('touchmove', e=>{
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
-
 document.addEventListener('touchend', e=>{
   for(let t of e.changedTouches){
-    if(t.identifier===joyTouchId){ joyTouchId=null; moveX=0; moveZ=0; isSprint=false; knob.style.transform='translate(-50%,-50%)'; }
+    if(t.identifier===joyTouchId){ joyTouchId=null; moveX=0; moveZ=0; knob.style.transform='translate(-50%,-50%)'; }
     if(t.identifier===camTouchId){ camTouchId=null; }
   }
   if(e.cancelable) e.preventDefault();
 },{passive:false});
-
 function handleJoy(t){
   let dx=t.clientX-joyCx, dy=t.clientY-joyCy, dist=Math.sqrt(dx*dx+dy*dy), max=45;
   if(dist>max){ dx=dx/max*45; dy=dy/max*45; dist=45; }
   knob.style.transform=`translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
   moveX=dx/max; moveZ=-dy/max;
-  let force=dist/max;
-  if(force>0.82){ isSprint=true; curSpeed=state==='crouch'?SPEEDS.crouchSprint:state==='prone'?SPEEDS.prone:SPEEDS.sprint; }
-  else { isSprint=false; curSpeed=state==='crouch'?SPEEDS.crouch:state==='prone'?SPEEDS.prone:SPEEDS.stand; }
+  // NO SPRINT LOGIC - FIXED SPEED
 }
-
 const standBtn=document.getElementById('stand'), crouchBtn=document.getElementById('crouch'), proneBtn=document.getElementById('prone');
-function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone'); if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.7; legs.scale.y=1; } if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; } if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; } curSpeed=s==='crouch'?SPEEDS.crouch:s==='prone'?SPEEDS.prone:SPEEDS.stand; }
+function setState(s){ state=s; standBtn.classList.toggle('active',s==='stand'); crouchBtn.classList.toggle('active',s==='crouch'); proneBtn.classList.toggle('active',s==='prone'); if(s==='stand'){ body.scale.y=1; body.position.y=2.6; head.position.y=4.7; legs.scale.y=1; curSpeed=SPEEDS.stand; } if(s==='crouch'){ body.scale.y=0.65; body.position.y=1.7; head.position.y=3.1; legs.scale.y=0.6; curSpeed=SPEEDS.crouch; } if(s==='prone'){ body.scale.y=0.28; body.position.y=0.7; head.position.y=1.2; legs.scale.y=0.28; curSpeed=SPEEDS.prone; } }
 standBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('stand'); goFS();},{passive:false});
 crouchBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('crouch'); goFS();},{passive:false});
 proneBtn.addEventListener('touchstart', e=>{e.preventDefault(); setState('prone'); goFS();},{passive:false});
-
 let fsDone=false;
 function goFS(){
   if(fsDone) return; fsDone=true;
@@ -184,7 +139,6 @@ function goFS(){
   setTimeout(()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); },200);
 }
 document.addEventListener('touchstart', goFS, {once:true});
-
 function animate(){
   requestAnimationFrame(animate);
   camYaw+=(targetYaw-camYaw)*0.15;
@@ -203,7 +157,7 @@ function animate(){
   camera.position.z=charGroup.position.z+Math.cos(yawRad)*Math.cos(pitchRad)*dist;
   camera.position.y=charGroup.position.y+h+Math.sin(pitchRad)*dist*0.6 + 2;
   camera.lookAt(charGroup.position.x, charGroup.position.y+2, charGroup.position.z);
-  document.getElementById('top').textContent=`350 FT | ${curSpeed.toFixed(1)} ft/s | MULTI-TOUCH BGMI`;
+  document.getElementById('top').textContent=`${(curSpeed/3.28084).toFixed(2)} m/s | ${state.toUpperCase()} LOCKED`;
   renderer.render(scene,camera);
 }
 animate();
